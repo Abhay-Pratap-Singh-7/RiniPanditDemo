@@ -347,18 +347,27 @@ export function setupConsultationSockets(wss: WebSocketServer) {
 
               await store.setAstrologerBusy(consultation.astrologer_id, false);
 
-              const summaryPayload = {
-                event: 'consultation:summary',
+              const endedPayload = {
+                event: 'consultation:ended',
                 data: {
                   sessionId,
+                  endedBy: userId,
                   totalMinutes: Math.ceil((updated?.duration_seconds || 60) / 60),
                   totalDeducted: updated?.total_deducted || 0,
                   endedAt: updated?.ended_at,
+                  message: userId === consultation.user_id
+                      ? 'The client has ended the consultation session.'
+                      : 'The consultation session has ended.',
                 },
               };
 
-              ws.send(JSON.stringify(summaryPayload));
-              broadcastToUser(consultation.astrologer_id, summaryPayload);
+              // Broadcast consultation:ended to client and pandit
+              broadcastToUser(consultation.user_id, endedPayload);
+              broadcastToUser(consultation.astrologer_id, endedPayload);
+              const astro = await store.getAstrologer(consultation.astrologer_id);
+              if (astro && (astro as any).profile_id) {
+                broadcastToUser((astro as any).profile_id, endedPayload);
+              }
             }
             break;
           }

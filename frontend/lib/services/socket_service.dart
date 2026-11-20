@@ -167,11 +167,19 @@ class SocketService {
   }
 
   void endConsultation(String sessionId) {
-    if (!_isConnected) return;
-    _channel?.sink.add(jsonEncode({
+    final payload = jsonEncode({
       'event': 'consultation:end',
       'data': {'sessionId': sessionId},
-    }));
+    });
+
+    if (!_isConnected) {
+      connect();
+      Future.delayed(const Duration(milliseconds: 300), () {
+        _channel?.sink.add(payload);
+      });
+      return;
+    }
+    _channel?.sink.add(payload);
   }
 
   void disconnect() {

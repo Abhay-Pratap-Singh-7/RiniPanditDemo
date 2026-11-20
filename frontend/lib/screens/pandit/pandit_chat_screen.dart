@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
@@ -14,9 +15,48 @@ class PanditChatScreen extends StatefulWidget {
 class _PanditChatScreenState extends State<PanditChatScreen> {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  StreamSubscription? _endedSub;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final appState = context.read<AppState>();
+      _endedSub = appState.socket.onConsultationEnded.listen((data) {
+        if (!mounted) return;
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: AppTheme.surfaceDark,
+            shape: RoundedRectangleBorder(borderRadius: AppTheme.cardRadius),
+            title: const Text(
+              'Consultation Ended',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+            content: Text(
+              data['message'] ?? 'The client has ended the live consultation session.',
+              style: const TextStyle(color: AppTheme.textMuted),
+            ),
+            actions: [
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.cardPurple),
+                child: const Text('Return to Dashboard', style: TextStyle(color: Colors.white)),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  Navigator.pop(context);
+                },
+              ),
+            ],
+          ),
+        );
+      });
+    });
+  }
 
   @override
   void dispose() {
+    _endedSub?.cancel();
     _textController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -349,9 +389,12 @@ class _PanditChatScreenState extends State<PanditChatScreen> {
                   Expanded(
                     child: TextField(
                       controller: _textController,
+                      enabled: appState.activeSession != null,
                       style: const TextStyle(color: Colors.white),
                       decoration: InputDecoration(
-                        hintText: 'Type astrological guidance and remedies...',
+                        hintText: appState.activeSession != null
+                            ? 'Type astrological guidance and remedies...'
+                            : 'Session has ended.',
                         contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(24),
@@ -361,7 +404,7 @@ class _PanditChatScreenState extends State<PanditChatScreen> {
                         fillColor: AppTheme.surfaceTile,
                       ),
                       onSubmitted: (val) {
-                        if (val.trim().isNotEmpty) {
+                        if (appState.activeSession != null && val.trim().isNotEmpty) {
                           appState.sendChatMessage(val);
                           _textController.clear();
                         }
@@ -370,15 +413,23 @@ class _PanditChatScreenState extends State<PanditChatScreen> {
                   ),
                   const SizedBox(width: 8),
                   CircleAvatar(
-                    backgroundColor: AppTheme.cardPurple,
+                    backgroundColor: appState.activeSession != null
+                        ? AppTheme.cardPurple
+                        : AppTheme.surfaceTile,
                     child: IconButton(
-                      icon: const Icon(Icons.send, color: Colors.white, size: 18),
-                      onPressed: () {
-                        if (_textController.text.trim().isNotEmpty) {
-                          appState.sendChatMessage(_textController.text);
-                          _textController.clear();
-                        }
-                      },
+                      icon: Icon(
+                        Icons.send,
+                        color: appState.activeSession != null ? Colors.white : AppTheme.textMuted,
+                        size: 18,
+                      ),
+                      onPressed: appState.activeSession != null
+                          ? () {
+                              if (_textController.text.trim().isNotEmpty) {
+                                appState.sendChatMessage(_textController.text);
+                                _textController.clear();
+                              }
+                            }
+                          : null,
                     ),
                   ),
                 ],

@@ -20,6 +20,7 @@ class _ChatConsultationScreenState extends State<ChatConsultationScreen> {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   StreamSubscription? _declinedSub;
+  StreamSubscription? _endedSub;
 
   @override
   void initState() {
@@ -36,12 +37,43 @@ class _ChatConsultationScreenState extends State<ChatConsultationScreen> {
         );
         Navigator.pop(context);
       });
+
+      _endedSub = appState.socket.onConsultationEnded.listen((data) {
+        if (!mounted) return;
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: AppTheme.surfaceDark,
+            shape: RoundedRectangleBorder(borderRadius: AppTheme.cardRadius),
+            title: const Text(
+              'Consultation Ended',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+            content: Text(
+              data['message'] ?? 'The consultation session has ended.',
+              style: const TextStyle(color: AppTheme.textMuted),
+            ),
+            actions: [
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.cardPurple),
+                child: const Text('OK', style: TextStyle(color: Colors.white)),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  Navigator.pop(context);
+                },
+              ),
+            ],
+          ),
+        );
+      });
     });
   }
 
   @override
   void dispose() {
     _declinedSub?.cancel();
+    _endedSub?.cancel();
     _textController.dispose();
     _scrollController.dispose();
     super.dispose();
