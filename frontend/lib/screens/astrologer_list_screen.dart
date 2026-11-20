@@ -91,7 +91,7 @@ class _AstrologerListScreenState extends State<AstrologerListScreen> {
                     child: Text('No astrologers found in this category', style: TextStyle(color: AppTheme.textMuted)),
                   )
                 : ListView.builder(
-                    padding: const EdgeInsets.only(bottom: 20, top: 4),
+                    padding: const EdgeInsets.only(bottom: 110, top: 4),
                     itemCount: filtered.length,
                     itemBuilder: (context, index) => AstrologerCard(astrologer: filtered[index]),
                   ),

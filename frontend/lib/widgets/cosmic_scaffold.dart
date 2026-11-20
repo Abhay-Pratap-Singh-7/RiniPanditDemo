@@ -5,6 +5,8 @@ class CosmicScaffold extends StatelessWidget {
   final Widget body;
   final Widget? bottomNavigationBar;
   final Widget? floatingActionButton;
+  final bool extendBody;
+  final bool extendBodyBehindAppBar;
 
   const CosmicScaffold({
     super.key,
@@ -12,37 +14,45 @@ class CosmicScaffold extends StatelessWidget {
     required this.body,
     this.bottomNavigationBar,
     this.floatingActionButton,
+    this.extendBody = true,
+    this.extendBodyBehindAppBar = true,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: appBar,
-      body: Stack(
-        children: [
-          // Universal Deep Starry Cosmic Background
-          Positioned.fill(
-            child: Image.asset(
-              'assets/bg.jpg',
-              fit: BoxFit.cover,
+    return Stack(
+      children: [
+        // Universal Deep Cosmic Starry Wallpaper (Fills 100% of entire physical screen)
+        Positioned.fill(
+          child: Image.asset(
+            'assets/bg.jpg',
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => Container(
+              color: const Color(0xFF0B0E23),
             ),
           ),
-          // Subtle tint overlay to guarantee clean text contrast
-          Positioned.fill(
-            child: Container(
-              color: const Color(0x44080B1E),
-            ),
+        ),
+        // Subtle deep tint overlay for maximum readability
+        Positioned.fill(
+          child: Container(
+            color: const Color(0x38080B1E),
           ),
-          // Foreground Screen Body
-          SafeArea(
+        ),
+        // Scaffold with transparent canvas extending behind AppBar and BottomNav
+        Scaffold(
+          backgroundColor: Colors.transparent,
+          extendBody: extendBody,
+          extendBodyBehindAppBar: extendBodyBehindAppBar,
+          appBar: appBar,
+          body: SafeArea(
+            top: appBar == null,
             bottom: false,
             child: body,
           ),
-        ],
-      ),
-      bottomNavigationBar: bottomNavigationBar,
-      floatingActionButton: floatingActionButton,
+          bottomNavigationBar: bottomNavigationBar,
+          floatingActionButton: floatingActionButton,
+        ),
+      ],
     );
   }
 }

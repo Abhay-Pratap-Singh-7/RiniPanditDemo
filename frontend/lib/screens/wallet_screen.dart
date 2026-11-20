@@ -13,7 +13,13 @@ class WalletScreen extends StatefulWidget {
 
 class _WalletScreenState extends State<WalletScreen> {
   final TextEditingController _amountController = TextEditingController(text: '500');
-  final List<double> _presets = [100, 250, 500, 1000];
+  final List<Map<String, dynamic>> _presetPacks = [
+    {'amount': 100, 'badge': ''},
+    {'amount': 250, 'badge': 'Popular'},
+    {'amount': 500, 'badge': '+₹50 Extra'},
+    {'amount': 1000, 'badge': '+₹150 Extra'},
+  ];
+  String _filter = 'all';
 
   @override
   void initState() {
@@ -33,17 +39,32 @@ class _WalletScreenState extends State<WalletScreen> {
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
 
+    final filteredTransactions = appState.transactions.where((tx) {
+      if (_filter == 'all') return true;
+      if (_filter == 'recharge') return tx.type == 'recharge' || tx.type == 'promo_credit';
+      if (_filter == 'consultation') return tx.type == 'consultation';
+      return true;
+    }).toList();
+
     return CosmicScaffold(
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        title: const Text('Astro Wallet'),
+        elevation: 0,
+        title: const Text(
+          'Astro Wallet',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            color: AppTheme.textWhite,
+          ),
+        ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 110),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Current Balance Card with Sunset / Coral Gradient and Wallet Illustration
+            // Available Balance Card
             Container(
               padding: const EdgeInsets.all(22),
               decoration: BoxDecoration(
@@ -59,8 +80,8 @@ class _WalletScreenState extends State<WalletScreen> {
                 boxShadow: [
                   BoxShadow(
                     color: AppTheme.cardPurple.withAlpha(70),
-                    blurRadius: 18,
-                    offset: const Offset(0, 6),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
                   ),
                 ],
               ),
@@ -70,16 +91,33 @@ class _WalletScreenState extends State<WalletScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Available Balance',
-                          style: TextStyle(color: Color(0xEEFFFFFF), fontSize: 13, fontWeight: FontWeight.w600),
+                        Row(
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: const BoxDecoration(
+                                color: AppTheme.accentCyan,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            const Text(
+                              'Available Balance',
+                              style: TextStyle(
+                                color: Color(0xEEFFFFFF),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 8),
                         Text(
                           '₹${appState.walletBalance.toStringAsFixed(2)}',
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 32,
+                            fontSize: 34,
                             fontWeight: FontWeight.w900,
                             letterSpacing: -0.5,
                           ),
@@ -88,8 +126,8 @@ class _WalletScreenState extends State<WalletScreen> {
                         Wrap(
                           children: const [
                             Text(
-                              'Instant per-minute recharge for consultations and Kundli readings.',
-                              style: TextStyle(color: Color(0xCCFFFFFF), fontSize: 12),
+                              'Auto-deducted per minute during live consultations and Kundli guidance.',
+                              style: TextStyle(color: Color(0xDDFFFFFF), fontSize: 12),
                               softWrap: true,
                             ),
                           ],
@@ -97,15 +135,15 @@ class _WalletScreenState extends State<WalletScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 14),
                   SizedBox(
-                    width: 75,
-                    height: 75,
+                    width: 78,
+                    height: 78,
                     child: Image.asset(
                       'assets/icons/tile_wallet.png',
                       fit: BoxFit.contain,
-                      errorBuilder: (_, _, _) => const Icon(
-                        Icons.account_balance_wallet,
+                      errorBuilder: (context, error, stackTrace) => const Icon(
+                        Icons.account_balance_wallet_rounded,
                         size: 60,
                         color: Colors.white,
                       ),
@@ -114,183 +152,362 @@ class _WalletScreenState extends State<WalletScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 22),
 
-            // Top-up Section
-            const Text(
-              'Select Amount to Add',
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 16,
-                color: Colors.white,
+            // Top-up Section Card
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceDark,
+                borderRadius: AppTheme.cardRadius,
+                border: Border.all(color: AppTheme.borderSubtle, width: 1.2),
               ),
-            ),
-            const SizedBox(height: 12),
-
-            // Presets
-            Row(
-              children: _presets.map((preset) {
-                final isSelected = _amountController.text == preset.toStringAsFixed(0);
-                return Expanded(
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        backgroundColor: isSelected ? AppTheme.cardPurple : AppTheme.surfaceTile,
-                        side: BorderSide(
-                          color: isSelected ? AppTheme.cardPurple : AppTheme.borderSubtle,
-                          width: 1.2,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(7),
+                        decoration: BoxDecoration(
+                          color: AppTheme.cardPurple.withAlpha(40),
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: const Icon(Icons.add_card_rounded, color: AppTheme.cardLilac, size: 18),
                       ),
-                      onPressed: () {
-                        setState(() {
-                          _amountController.text = preset.toStringAsFixed(0);
-                        });
-                      },
-                      child: Text(
-                        '₹${preset.toStringAsFixed(0)}',
+                      const SizedBox(width: 10),
+                      const Text(
+                        'Select Recharge Amount',
                         style: TextStyle(
-                          color: isSelected ? Colors.white : AppTheme.textMuted,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                          color: AppTheme.textWhite,
                         ),
                       ),
-                    ),
+                    ],
                   ),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 16),
+                  const SizedBox(height: 16),
 
-            // Custom Amount Input
-            TextField(
-              controller: _amountController,
-              keyboardType: TextInputType.number,
-              style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-              decoration: const InputDecoration(
-                prefixText: '₹ ',
-                prefixStyle: TextStyle(color: AppTheme.cardLilac, fontSize: 18, fontWeight: FontWeight.bold),
-                labelText: 'Enter Custom Amount',
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Recharge Button
-            ElevatedButton(
-              onPressed: appState.isLoading
-                  ? null
-                  : () async {
-                      final amount = double.tryParse(_amountController.text);
-                      if (amount != null && amount > 0) {
-                        await appState.rechargeWallet(amount);
-                        if (!context.mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Recharge of ₹${amount.toStringAsFixed(0)} completed successfully.'),
-                            backgroundColor: AppTheme.cardPurple,
-                          ),
-                        );
-                      }
-                    },
-              child: appState.isLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                    )
-                  : const Text('Add Money to Wallet'),
-            ),
-            const SizedBox(height: 30),
-
-            // Transaction History
-            const Text(
-              'Transaction History',
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 16,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            appState.transactions.isEmpty
-                ? Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: AppTheme.surfaceDark.withAlpha(200),
-                      borderRadius: AppTheme.cardRadius,
-                      border: Border.all(color: AppTheme.borderSubtle),
-                    ),
-                    child: const Center(
-                      child: Text('No transactions recorded yet', style: TextStyle(color: AppTheme.textMuted)),
-                    ),
-                  )
-                : ListView.separated(
+                  // Presets Grid
+                  GridView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    itemCount: appState.transactions.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 8),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      mainAxisSpacing: 10,
+                      crossAxisSpacing: 10,
+                      childAspectRatio: 2.2,
+                    ),
+                    itemCount: _presetPacks.length,
                     itemBuilder: (context, index) {
-                      final tx = appState.transactions[index];
-                      final isCredit = tx.type == 'recharge' || tx.type == 'promo_credit';
+                      final pack = _presetPacks[index];
+                      final amount = pack['amount'] as int;
+                      final badge = pack['badge'] as String;
+                      final isSelected = _amountController.text == amount.toString();
 
-                      return Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: AppTheme.surfaceDark.withAlpha(210),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppTheme.borderSubtle, width: 1),
-                        ),
-                        child: Row(
-                          children: [
-                            CircleAvatar(
-                              radius: 18,
-                              backgroundColor: isCredit
-                                  ? AppTheme.accentCyan.withAlpha(30)
-                                  : Colors.redAccent.withAlpha(30),
-                              child: Icon(
-                                isCredit ? Icons.arrow_downward : Icons.arrow_upward,
-                                color: isCredit ? AppTheme.accentCyan : Colors.redAccent,
-                                size: 16,
-                              ),
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _amountController.text = amount.toString();
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: isSelected ? AppTheme.cardPurple : AppTheme.surfaceTile,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: isSelected ? AppTheme.cardLilac : AppTheme.borderSubtle,
+                              width: 1.2,
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Wrap(
-                                    children: [
-                                      Text(
-                                        tx.description,
-                                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Colors.white),
-                                        softWrap: true,
-                                      ),
-                                    ],
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                '₹$amount',
+                                style: TextStyle(
+                                  color: isSelected ? Colors.white : AppTheme.textWhite,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 17,
+                                ),
+                              ),
+                              if (badge.isNotEmpty)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? Colors.white.withAlpha(50)
+                                        : AppTheme.cardCoral.withAlpha(35),
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Balance: ₹${tx.balanceAfter.toStringAsFixed(2)}',
-                                    style: const TextStyle(color: AppTheme.textMuted, fontSize: 11),
+                                  child: Text(
+                                    badge,
+                                    style: TextStyle(
+                                      fontSize: 9.5,
+                                      fontWeight: FontWeight.w700,
+                                      color: isSelected ? Colors.white : AppTheme.cardCoral,
+                                    ),
                                   ),
-                                ],
-                              ),
-                            ),
-                            Text(
-                              '${isCredit ? '+' : ''}₹${tx.amount.abs().toStringAsFixed(2)}',
-                              style: TextStyle(
-                                color: isCredit ? AppTheme.accentCyan : Colors.redAccent,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
+                                ),
+                            ],
+                          ),
                         ),
                       );
                     },
                   ),
+                  const SizedBox(height: 16),
+
+                  // Custom Amount Input
+                  TextField(
+                    controller: _amountController,
+                    keyboardType: TextInputType.number,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    decoration: InputDecoration(
+                      prefixText: '₹ ',
+                      prefixStyle: const TextStyle(
+                        color: AppTheme.cardLilac,
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      labelText: 'Custom Amount',
+                      filled: true,
+                      fillColor: AppTheme.surfaceTile,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: const BorderSide(color: AppTheme.borderSubtle),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+
+                  // Recharge Button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.cardPurple,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(25),
+                        ),
+                        elevation: 0,
+                      ),
+                      onPressed: appState.isLoading
+                          ? null
+                          : () async {
+                              final amount = double.tryParse(_amountController.text);
+                              if (amount != null && amount > 0) {
+                                await appState.rechargeWallet(amount);
+                                if (!context.mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Recharge of ₹${amount.toStringAsFixed(0)} completed successfully.'),
+                                    backgroundColor: AppTheme.cardPurple,
+                                  ),
+                                );
+                              }
+                            },
+                      child: appState.isLoading
+                          ? const SizedBox(
+                              height: 22,
+                              width: 22,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            )
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.bolt_rounded, size: 20, color: Colors.white),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Add ₹${_amountController.text} to Wallet',
+                                  style: const TextStyle(
+                                    fontSize: 14.5,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      Icon(Icons.lock_outline_rounded, size: 14, color: AppTheme.textMuted),
+                      SizedBox(width: 5),
+                      Text(
+                        '100% Secure & Encrypted Payments via UPI, Cards & NetBanking',
+                        style: TextStyle(fontSize: 11, color: AppTheme.textMuted),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Transaction History Header & Filter Chips
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Transaction History',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 17,
+                    color: AppTheme.textWhite,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+                Row(
+                  children: [
+                    _buildFilterChip('All', 'all'),
+                    const SizedBox(width: 6),
+                    _buildFilterChip('Recharge', 'recharge'),
+                    const SizedBox(width: 6),
+                    _buildFilterChip('Calls', 'consultation'),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+
+            // Transaction List
+            if (filteredTransactions.isEmpty)
+              Container(
+                padding: const EdgeInsets.all(28),
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceDark,
+                  borderRadius: AppTheme.cardRadius,
+                  border: Border.all(color: AppTheme.borderSubtle),
+                ),
+                child: Column(
+                  children: const [
+                    Icon(Icons.receipt_long_outlined, size: 40, color: AppTheme.textMuted),
+                    SizedBox(height: 8),
+                    Text(
+                      'No transactions in this category yet',
+                      style: TextStyle(color: AppTheme.textMuted, fontSize: 13),
+                    ),
+                  ],
+                ),
+              )
+            else
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: filteredTransactions.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 8),
+                itemBuilder: (context, index) {
+                  final tx = filteredTransactions[index];
+                  final isCredit = tx.type == 'recharge' || tx.type == 'promo_credit';
+
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.surfaceDark,
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: AppTheme.borderSubtle, width: 1),
+                    ),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 19,
+                          backgroundColor: isCredit
+                              ? AppTheme.accentCyan.withAlpha(25)
+                              : AppTheme.cardCoral.withAlpha(25),
+                          child: Icon(
+                            isCredit ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
+                            size: 18,
+                            color: isCredit ? AppTheme.accentCyan : AppTheme.cardCoral,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                tx.description,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13.5,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                tx.createdAt.length > 10 ? tx.createdAt.substring(0, 10) : tx.createdAt,
+                                style: const TextStyle(color: AppTheme.textMuted, fontSize: 11),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              '${isCredit ? "+" : "-"}₹${tx.amount.toStringAsFixed(2)}',
+                              style: TextStyle(
+                                color: isCredit ? AppTheme.accentCyan : AppTheme.cardCoral,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14.5,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                              decoration: BoxDecoration(
+                                color: AppTheme.surfaceTile,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Text(
+                                'Completed',
+                                style: TextStyle(color: AppTheme.textMuted, fontSize: 10),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(String label, String value) {
+    final isSelected = _filter == value;
+    return GestureDetector(
+      onTap: () => setState(() => _filter = value),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: isSelected ? AppTheme.cardPurple : AppTheme.surfaceTile,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isSelected ? AppTheme.cardLilac : AppTheme.borderSubtle,
+            width: 0.8,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            color: isSelected ? Colors.white : AppTheme.textMuted,
+          ),
         ),
       ),
     );
