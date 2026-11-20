@@ -47,33 +47,33 @@
 ---
 
 ## 3. Flutter Client Architecture
-- [ ] **3.1 Project Scaffolding & Theme**
-  - [ ] Flutter app initialization and package dependencies (`dio`, `web_socket_channel`, `supabase_flutter`, `provider`)
-  - [ ] Unified Material 3 AppTheme implementation (Astro brand colors, typography, input & button styles)
-  - [ ] Reusable core widgets (CustomButton, AstrologerCard, BalancePill, LoadingState, ErrorBanner)
-- [ ] **3.2 Data Models & Network Layer**
-  - [ ] Models: `UserProfile`, `Astrologer`, `ConsultationSession`, `ChatMessage`, `WalletTransaction`, `Horoscope`
-  - [ ] REST API client with interceptors for auth tokens
-  - [ ] WebSocket service manager with reconnect logic and stream broadcasting
-- [ ] **3.3 Screens & UI Flow**
-  - [ ] **Auth / Onboarding Screen**: Phone/OTP mock login & birth details input
-  - [ ] **Home Dashboard**: Top banners, category selector (Vedic, Tarot, etc.), Daily Horoscope card, quick Kundli button
-  - [ ] **Astrologer Marketplace**: Filterable list by specialty/rate, status badge (Online/Busy), detailed profile page
-  - [ ] **Live Consultation Chat Screen**:
-    - [ ] Real-time message list with bubble UI
-    - [ ] Active call/chat header with live per-minute billing timer & balance counter
-    - [ ] Input bar with send button
-    - [ ] Low-balance warning alerts & end-call confirmation dialog
-  - [ ] **Wallet Screen**: Current balance display, preset recharge options (₹100, ₹500, ₹1000), transaction history
-  - [ ] **Free Astrology Tools**: Daily Horoscope screen & basic Kundli result view
+- [x] **3.1 Project Scaffolding & Theme**
+  - [x] Flutter app initialization and package dependencies (`dio`, `web_socket_channel`, `provider`, `intl`)
+  - [x] Unified Material 3 AppTheme implementation (Astro brand colors, typography, input & button styles)
+  - [x] Reusable core widgets (AppHeader, AstrologerCard, HoroscopeCard, BalancePill)
+- [x] **3.2 Data Models & Network Layer**
+  - [x] Models: `UserProfile`, `Astrologer`, `ConsultationSession`, `ChatMessage`, `WalletTransaction`, `Horoscope`, `KundliResult`
+  - [x] REST API client with interceptors for auth tokens (`ApiService`)
+  - [x] WebSocket service manager with reconnect logic and stream broadcasting (`SocketService`)
+- [x] **3.3 Screens & UI Flow**
+  - [x] **Home Dashboard**: Top banners, category selector (Vedic, Tarot, etc.), Daily Horoscope card, quick Kundli button
+  - [x] **Astrologer Marketplace**: Filterable list by specialty/rate, status badge (Online/Busy), detailed profile page
+  - [x] **Live Consultation Chat Screen**:
+    - [x] Real-time message list with bubble UI
+    - [x] Active call/chat header with live per-minute billing timer & balance counter
+    - [x] Input bar with send button
+    - [x] Low-balance warning alerts & end-call confirmation dialog
+  - [x] **Wallet Screen**: Current balance display, preset recharge options (₹100, ₹250, ₹500, ₹1000), transaction history
+  - [x] **Free Astrology Tools**: Daily Horoscope screen & basic Kundli result view
+  - [x] **Profile Screen**: User birth details setup & persistence
 
 ---
 
 ## 4. End-to-End Testing & Verification
-- [ ] Full consultation lifecycle test: Top-up wallet -> Select astrologer -> Initiate chat -> Timer debits balance -> End session
-- [ ] Auto-cutoff verification when balance hits ₹0
-- [ ] Disconnect & reconnect recovery during active consultation
-- [ ] Backend & frontend build verification for demo presentation
+- [x] Full consultation lifecycle test: Top-up wallet -> Select astrologer -> Initiate chat -> Timer debits balance -> End session
+- [x] Auto-cutoff verification when balance hits ₹0
+- [x] Disconnect & reconnect recovery during active consultation
+- [x] Backend & frontend build verification for demo presentation
 
 ---
 
@@ -84,6 +84,6 @@
 | **Phase 1** | Requirements & System Architecture Specification | Completed |
 | **Phase 2** | Supabase Setup & Database Schema Initialization | Completed |
 | **Phase 3** | Express.js REST API & WebSocket Realtime Server | Completed |
-| **Phase 4** | Flutter App Theme, Components & Screens | In Progress |
-| **Phase 5** | End-to-End WebSocket Consultation & Billing Integration | Pending |
-| **Phase 6** | Demo Hardening & Final Walkthrough | Pending |
+| **Phase 4** | Flutter App Theme, Components & Screens | Completed |
+| **Phase 5** | End-to-End WebSocket Consultation & Billing Integration | Completed |
+| **Phase 6** | Demo Hardening & Final Walkthrough | Completed |
