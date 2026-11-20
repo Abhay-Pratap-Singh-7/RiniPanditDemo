@@ -20,12 +20,20 @@ const router = Router();
 router.use(authenticate);
 
 // ==========================================
-// SUPABASE AUTHENTICATION APIS
+// SUPABASE AUTHENTICATION APIS (With Aliases)
 // ==========================================
 router.post('/auth/signup', signUp);
+router.post('/auth/sign-up', signUp);
+router.post('/auth/register', signUp);
+router.post('/auth/create-account', signUp);
+
 router.post('/auth/login', signIn);
+router.post('/auth/signin', signIn);
+router.post('/auth/sign-in', signIn);
+
 router.get('/auth/me', getMe);
 router.post('/auth/logout', signOut);
+router.post('/auth/signout', signOut);
 router.post('/auth/refresh', refreshToken);
 
 // Pandit / Astrologer authentication

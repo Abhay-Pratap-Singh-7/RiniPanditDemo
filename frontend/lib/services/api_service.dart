@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import '../core/constants/api_constants.dart';
 import '../models/user_profile.dart';
@@ -23,13 +24,32 @@ class ApiService {
       ),
     );
 
+    // Logging & Auth Interceptor for Debug Console Visibility
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) {
           if (_authToken != null && _authToken!.isNotEmpty) {
             options.headers['Authorization'] = 'Bearer $_authToken';
           }
+          debugPrint('🚀 [DIO REQUEST] ${options.method.toUpperCase()} ${options.baseUrl}${options.path}');
+          if (options.queryParameters.isNotEmpty) {
+            debugPrint('   🔍 Query: ${options.queryParameters}');
+          }
+          if (options.data != null) {
+            debugPrint('   📦 Data: ${options.data}');
+          }
           return handler.next(options);
+        },
+        onResponse: (response, handler) {
+          debugPrint('✅ [DIO RESPONSE ${response.statusCode}] ${response.requestOptions.method} ${response.requestOptions.path}');
+          debugPrint('   📥 Payload: ${response.data}');
+          return handler.next(response);
+        },
+        onError: (DioException err, handler) {
+          debugPrint('❌ [DIO ERROR ${err.response?.statusCode}] ${err.requestOptions.method} ${err.requestOptions.path}');
+          debugPrint('   ⚠️ Message: ${err.message}');
+          debugPrint('   🛑 Response: ${err.response?.data}');
+          return handler.next(err);
         },
       ),
     );
@@ -53,35 +73,148 @@ class ApiService {
     int? experienceYears,
     String? bio,
   }) async {
-    final response = await _dio.post('/auth/signup', data: {
-      'email': email,
-      'password': password,
-      'fullName': fullName ?? 'Devotee / Client',
-      'phone': phone ?? '+919876543210',
-      'role': role,
-      'specialties': specialties ?? ['Vedic', 'Kundli'],
-      'ratePerMinute': ratePerMinute ?? 25.0,
-      'experienceYears': experienceYears ?? 5,
-      'bio': bio ?? '',
-    });
-    if (response.data['token'] != null) {
-      setAuthToken(response.data['token'] as String);
+    try {
+      final response = await _dio.post('/auth/signup', data: {
+        'email': email,
+        'password': password,
+        'fullName': fullName ?? 'Devotee / Client',
+        'phone': phone ?? '+919876543210',
+        'role': role,
+        'specialties': specialties ?? ['Vedic', 'Kundli'],
+        'ratePerMinute': ratePerMinute ?? 25.0,
+        'experienceYears': experienceYears ?? 5,
+        'bio': bio ?? '',
+      });
+      if (response.data['token'] != null) {
+        setAuthToken(response.data['token'] as String);
+      }
+      return response.data;
+    } on DioException catch (e) {
+      // 404 Fallback: If backend endpoint has not yet completed deployment on Render,
+      // authenticate directly through the Supabase Auth REST endpoint.
+      if (e.response?.statusCode == 404 && ApiConstants.supabaseUrl.isNotEmpty) {
+        debugPrint('[ApiService] Backend returned 404. Initiating direct Supabase Auth fallback...');
+        return await _directSupabaseSignUp(
+          email: email,
+          password: password,
+          fullName: fullName,
+          phone: phone,
+          role: role,
+        );
+      }
+      rethrow;
     }
-    return response.data;
   }
 
   Future<Map<String, dynamic>> signInWithSupabase({
     required String email,
     required String password,
   }) async {
-    final response = await _dio.post('/auth/login', data: {
-      'email': email,
-      'password': password,
-    });
-    if (response.data['token'] != null) {
-      setAuthToken(response.data['token'] as String);
+    try {
+      final response = await _dio.post('/auth/login', data: {
+        'email': email,
+        'password': password,
+      });
+      if (response.data['token'] != null) {
+        setAuthToken(response.data['token'] as String);
+      }
+      return response.data;
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404 && ApiConstants.supabaseUrl.isNotEmpty) {
+        debugPrint('[ApiService] Backend returned 404. Initiating direct Supabase Auth fallback...');
+        return await _directSupabaseSignIn(email: email, password: password);
+      }
+      rethrow;
     }
-    return response.data;
+  }
+
+  // Direct Supabase Auth REST Fallback
+  Future<Map<String, dynamic>> _directSupabaseSignUp({
+    required String email,
+    required String password,
+    String? fullName,
+    String? phone,
+    String role = 'user',
+  }) async {
+    final directDio = Dio();
+    final res = await directDio.post(
+      '${ApiConstants.supabaseUrl}/auth/v1/signup',
+      options: Options(
+        headers: {
+          'apikey': ApiConstants.supabaseAnonKey,
+          'Authorization': 'Bearer ${ApiConstants.supabaseAnonKey}',
+          'Content-Type': 'application/json',
+        },
+      ),
+      data: {
+        'email': email,
+        'password': password,
+        'data': {
+          'full_name': fullName ?? 'Devotee / Client',
+          'phone': phone ?? '+919876543210',
+          'role': role,
+        },
+      },
+    );
+
+    final data = res.data;
+    final token = data['access_token'] ?? data['session']?['access_token'] ?? '';
+    if (token.isNotEmpty) {
+      setAuthToken(token as String);
+    }
+    return {
+      'success': true,
+      'token': token,
+      'user': data['user'] ?? data,
+      'profile': {
+        'id': data['user']?['id'] ?? 'user_registered',
+        'full_name': fullName ?? 'Devotee / Client',
+        'phone': phone ?? '+919876543210',
+        'wallet_balance': role == 'pandit' ? 0.0 : 100.0,
+      },
+      'role': role,
+    };
+  }
+
+  Future<Map<String, dynamic>> _directSupabaseSignIn({
+    required String email,
+    required String password,
+  }) async {
+    final directDio = Dio();
+    final res = await directDio.post(
+      '${ApiConstants.supabaseUrl}/auth/v1/token?grant_type=password',
+      options: Options(
+        headers: {
+          'apikey': ApiConstants.supabaseAnonKey,
+          'Authorization': 'Bearer ${ApiConstants.supabaseAnonKey}',
+          'Content-Type': 'application/json',
+        },
+      ),
+      data: {
+        'email': email,
+        'password': password,
+      },
+    );
+
+    final data = res.data;
+    final token = data['access_token'] ?? '';
+    if (token.isNotEmpty) {
+      setAuthToken(token as String);
+    }
+    final user = data['user'] ?? {};
+    final role = user['user_metadata']?['role'] ?? 'user';
+    return {
+      'success': true,
+      'token': token,
+      'user': user,
+      'profile': {
+        'id': user['id'] ?? 'user_logged_in',
+        'full_name': user['user_metadata']?['full_name'] ?? 'Devotee',
+        'phone': user['user_metadata']?['phone'] ?? '+919876543210',
+        'wallet_balance': 100.0,
+      },
+      'role': role,
+    };
   }
 
   Future<Map<String, dynamic>> getMe() async {

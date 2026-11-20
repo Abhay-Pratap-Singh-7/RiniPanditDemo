@@ -13,13 +13,28 @@ const server = http.createServer(app);
 app.use(cors({ origin: '*' }));
 app.use(express.json());
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', service: 'Rini Pandit Astrology API & WebSocket Gateway', timestamp: new Date() });
+// Comprehensive HTTP Request Logger for Debugging
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    console.log(`[HTTP ${req.method}] ${req.originalUrl || req.url} -> ${res.statusCode} (${duration}ms)`);
+  });
+  next();
 });
 
-// API Routes
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    service: 'Rini Pandit Astrology API & WebSocket Gateway',
+    timestamp: new Date(),
+  });
+});
+
+// API Routes mounted on both /api and / for maximum endpoint compatibility
 app.use('/api', routes);
+app.use('/', routes);
 
 // WebSocket Server for Consultation & Realtime Billing
 const wss = new WebSocketServer({ server, path: '/ws/consultation' });
