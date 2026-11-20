@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/theme/app_theme.dart';
 import '../providers/app_state.dart';
+import '../widgets/cosmic_scaffold.dart';
 import '../widgets/app_header.dart';
 import '../widgets/quick_feature_tile.dart';
 import '../widgets/featured_story_card.dart';
@@ -23,18 +24,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final appState = context.watch<AppState>();
 
     final pages = [
-      _buildHomeFeed(theme, appState),
+      _buildHomeFeed(appState),
       const AstrologerListScreen(),
       const KundliScreen(),
       const WalletScreen(),
     ];
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundDark,
+      backgroundColor: Colors.transparent,
       body: pages[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
@@ -49,9 +49,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildHomeFeed(ThemeData theme, AppState appState) {
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundDark,
+  Widget _buildHomeFeed(AppState appState) {
+    return CosmicScaffold(
       appBar: const AppHeader(title: 'Rini Astro'),
       body: SingleChildScrollView(
         child: Column(
@@ -81,15 +80,15 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
-            // Top 3 Quick Feature Tiles (as in reference image)
+            // Top 3 Quick Feature Tiles (with cut out transparent assets)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
                 children: [
                   QuickFeatureTile(
-                    title: 'Affirmation for You',
-                    assetName: 'tile_affirmation.png',
-                    fallbackIcon: Icons.spa_outlined,
+                    title: 'Vedic Guidance',
+                    assetName: 'tile_vedic.png',
+                    fallbackIcon: Icons.menu_book,
                     onTap: () {
                       setState(() => _currentIndex = 1);
                     },
@@ -97,15 +96,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   QuickFeatureTile(
                     title: 'Zodiac Signs',
                     assetName: 'tile_zodiac.png',
-                    fallbackIcon: Icons.nightlight_round,
+                    fallbackIcon: Icons.brightness_7_rounded,
                     onTap: () {
                       setState(() => _currentIndex = 2);
                     },
                   ),
                   QuickFeatureTile(
-                    title: 'Lunar Calendar',
-                    assetName: 'tile_calendar.png',
-                    fallbackIcon: Icons.calendar_month_outlined,
+                    title: 'Kundli Chart',
+                    assetName: 'tile_kundli.png',
+                    fallbackIcon: Icons.description_outlined,
                     onTap: () {
                       setState(() => _currentIndex = 2);
                     },
@@ -115,23 +114,12 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 12),
 
-            // 3 Large Featured Story Cards (as in reference image)
+            // 3 Large Featured Story Cards (with cut out transparent assets)
             FeaturedStoryCard(
-              title: "Vedic Astrology Guidance",
-              subtitle: "tells you about your destiny and life purpose",
+              title: "Vedic Astrology Reading",
+              subtitle: "connects you with verified astrologers for guidance",
               backgroundColor: AppTheme.cardPurple,
               assetName: 'card_vedic_art.png',
-              fallbackIcon: Icons.self_improvement,
-              onTap: () {
-                setState(() => _currentIndex = 1);
-              },
-            ),
-
-            FeaturedStoryCard(
-              title: "Subconscious Voice",
-              subtitle: "sheds light on the problems your inner mind is speaking about",
-              backgroundColor: AppTheme.cardLilac,
-              assetName: 'card_tarot_art.png',
               fallbackIcon: Icons.menu_book_rounded,
               onTap: () {
                 setState(() => _currentIndex = 1);
@@ -139,8 +127,19 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
 
             FeaturedStoryCard(
-              title: "Cosmic Predictions",
-              subtitle: "tells you about upcoming planetary events and transits",
+              title: "Tarot & Subconscious Voice",
+              subtitle: "sheds light on the questions your inner soul is seeking",
+              backgroundColor: AppTheme.cardLilac,
+              assetName: 'card_tarot_art.png',
+              fallbackIcon: Icons.style,
+              onTap: () {
+                setState(() => _currentIndex = 1);
+              },
+            ),
+
+            FeaturedStoryCard(
+              title: "Cosmic Kundli Forecast",
+              subtitle: "unveils planetary houses, transits, and customized remedies",
               backgroundColor: AppTheme.cardCoral,
               assetName: 'card_kundli_art.png',
               fallbackIcon: Icons.public_rounded,

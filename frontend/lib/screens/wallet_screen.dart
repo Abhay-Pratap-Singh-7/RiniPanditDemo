@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/theme/app_theme.dart';
 import '../providers/app_state.dart';
+import '../widgets/cosmic_scaffold.dart';
 
 class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
@@ -32,9 +33,9 @@ class _WalletScreenState extends State<WalletScreen> {
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
 
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundDark,
+    return CosmicScaffold(
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
         title: const Text('Astro Wallet'),
       ),
       body: SingleChildScrollView(
@@ -42,7 +43,7 @@ class _WalletScreenState extends State<WalletScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Current Balance Card with Sunset / Coral Gradient
+            // Current Balance Card with Sunset / Coral Gradient and Wallet Illustration
             Container(
               padding: const EdgeInsets.all(22),
               decoration: BoxDecoration(
@@ -63,32 +64,52 @@ class _WalletScreenState extends State<WalletScreen> {
                   ),
                 ],
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
                 children: [
-                  const Text(
-                    'Available Balance',
-                    style: TextStyle(color: Color(0xEEFFFFFF), fontSize: 13, fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    '₹${appState.walletBalance.toStringAsFixed(2)}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 34,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -0.5,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Available Balance',
+                          style: TextStyle(color: Color(0xEEFFFFFF), fontSize: 13, fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          '₹${appState.walletBalance.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 32,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          children: const [
+                            Text(
+                              'Instant per-minute recharge for consultations and Kundli readings.',
+                              style: TextStyle(color: Color(0xCCFFFFFF), fontSize: 12),
+                              softWrap: true,
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 10),
-                  Wrap(
-                    children: const [
-                      Text(
-                        'Direct per-minute deduction for verified Astrologer consultations and remedies.',
-                        style: TextStyle(color: Color(0xCCFFFFFF), fontSize: 12),
-                        softWrap: true,
+                  const SizedBox(width: 10),
+                  SizedBox(
+                    width: 75,
+                    height: 75,
+                    child: Image.asset(
+                      'assets/icons/tile_wallet.png',
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, _, _) => const Icon(
+                        Icons.account_balance_wallet,
+                        size: 60,
+                        color: Colors.white,
                       ),
-                    ],
+                    ),
                   ),
                 ],
               ),
@@ -197,7 +218,7 @@ class _WalletScreenState extends State<WalletScreen> {
                 ? Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: AppTheme.surfaceDark,
+                      color: AppTheme.surfaceDark.withAlpha(200),
                       borderRadius: AppTheme.cardRadius,
                       border: Border.all(color: AppTheme.borderSubtle),
                     ),
@@ -217,7 +238,7 @@ class _WalletScreenState extends State<WalletScreen> {
                       return Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         decoration: BoxDecoration(
-                          color: AppTheme.surfaceDark,
+                          color: AppTheme.surfaceDark.withAlpha(210),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(color: AppTheme.borderSubtle, width: 1),
                         ),

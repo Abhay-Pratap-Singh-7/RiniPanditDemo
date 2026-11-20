@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/theme/app_theme.dart';
 import '../providers/app_state.dart';
+import '../widgets/cosmic_scaffold.dart';
 import '../widgets/astrologer_card.dart';
 import '../widgets/app_header.dart';
 
@@ -37,8 +38,7 @@ class _AstrologerListScreenState extends State<AstrologerListScreen> {
                 .any((s) => s.toLowerCase().contains(_selectedCategory.toLowerCase())))
             .toList();
 
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundDark,
+    return CosmicScaffold(
       appBar: const AppHeader(title: 'Astrologer Marketplace'),
       body: Column(
         children: [

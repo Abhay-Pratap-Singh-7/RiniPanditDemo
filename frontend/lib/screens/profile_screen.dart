@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/theme/app_theme.dart';
 import '../providers/app_state.dart';
+import '../widgets/cosmic_scaffold.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -42,9 +43,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
 
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundDark,
+    return CosmicScaffold(
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
         title: const Text('My Profile & Birth Data'),
       ),
       body: SingleChildScrollView(
@@ -83,7 +84,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Container(
               padding: const EdgeInsets.all(18.0),
               decoration: BoxDecoration(
-                color: AppTheme.surfaceDark,
+                color: AppTheme.surfaceDark.withAlpha(220),
                 borderRadius: AppTheme.cardRadius,
                 border: Border.all(color: AppTheme.borderSubtle, width: 1.2),
               ),

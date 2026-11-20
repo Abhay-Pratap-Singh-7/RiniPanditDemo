@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../core/theme/app_theme.dart';
 import '../models/astrologer.dart';
 import '../providers/app_state.dart';
+import '../widgets/cosmic_scaffold.dart';
 
 class ChatConsultationScreen extends StatefulWidget {
   final Astrologer astrologer;
@@ -49,11 +50,11 @@ class _ChatConsultationScreenState extends State<ChatConsultationScreen> {
 
     _scrollToBottom();
 
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundDark,
+    return CosmicScaffold(
       appBar: AppBar(
         titleSpacing: 0,
-        backgroundColor: AppTheme.surfaceDark,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         title: Row(
           children: [
             CircleAvatar(
@@ -166,7 +167,7 @@ class _ChatConsultationScreenState extends State<ChatConsultationScreen> {
           // Real-time Billing & Wallet Ticker Banner
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            color: AppTheme.surfaceTile,
+            color: AppTheme.surfaceTile.withAlpha(200),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -187,7 +188,7 @@ class _ChatConsultationScreenState extends State<ChatConsultationScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: AppTheme.cardPurple.withAlpha(40),
+                    color: AppTheme.cardPurple.withAlpha(50),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Text(
@@ -239,7 +240,7 @@ class _ChatConsultationScreenState extends State<ChatConsultationScreen> {
                           decoration: BoxDecoration(
                             color: isUser
                                 ? AppTheme.cardPurple
-                                : AppTheme.surfaceDark,
+                                : AppTheme.surfaceDark.withAlpha(230),
                             borderRadius: BorderRadius.only(
                               topLeft: const Radius.circular(20),
                               topRight: const Radius.circular(20),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/theme/app_theme.dart';
 import '../providers/app_state.dart';
+import '../widgets/cosmic_scaffold.dart';
 
 class KundliScreen extends StatefulWidget {
   const KundliScreen({super.key});
@@ -41,9 +42,9 @@ class _KundliScreenState extends State<KundliScreen> {
     final appState = context.watch<AppState>();
     final kundli = appState.currentKundli;
 
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundDark,
+    return CosmicScaffold(
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
         title: const Text('Free Kundli Analysis'),
       ),
       body: SingleChildScrollView(
@@ -55,7 +56,7 @@ class _KundliScreenState extends State<KundliScreen> {
             Container(
               padding: const EdgeInsets.all(18.0),
               decoration: BoxDecoration(
-                color: AppTheme.surfaceDark,
+                color: AppTheme.surfaceDark.withAlpha(220),
                 borderRadius: AppTheme.cardRadius,
                 border: Border.all(color: AppTheme.borderSubtle, width: 1.2),
               ),
@@ -165,7 +166,7 @@ class _KundliScreenState extends State<KundliScreen> {
               Container(
                 padding: const EdgeInsets.all(18.0),
                 decoration: BoxDecoration(
-                  color: kundli.manglik ? const Color(0x22EF4444) : AppTheme.surfaceDark,
+                  color: kundli.manglik ? const Color(0x22EF4444) : AppTheme.surfaceDark.withAlpha(220),
                   borderRadius: AppTheme.cardRadius,
                   border: Border.all(
                     color: kundli.manglik ? Colors.redAccent.withAlpha(100) : AppTheme.borderSubtle,
@@ -207,7 +208,7 @@ class _KundliScreenState extends State<KundliScreen> {
               Container(
                 padding: const EdgeInsets.all(18.0),
                 decoration: BoxDecoration(
-                  color: AppTheme.surfaceDark,
+                  color: AppTheme.surfaceDark.withAlpha(220),
                   borderRadius: AppTheme.cardRadius,
                   border: Border.all(color: AppTheme.borderSubtle, width: 1.2),
                 ),
@@ -251,7 +252,7 @@ class _KundliScreenState extends State<KundliScreen> {
               Container(
                 padding: const EdgeInsets.all(18.0),
                 decoration: BoxDecoration(
-                  color: AppTheme.surfaceDark,
+                  color: AppTheme.surfaceDark.withAlpha(220),
                   borderRadius: AppTheme.cardRadius,
                   border: Border.all(color: AppTheme.borderSubtle, width: 1.2),
                 ),
@@ -292,7 +293,7 @@ class _KundliScreenState extends State<KundliScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceDark,
+        color: AppTheme.surfaceDark.withAlpha(220),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppTheme.borderSubtle, width: 1.2),
       ),
