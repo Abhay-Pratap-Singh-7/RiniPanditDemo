@@ -27,7 +27,7 @@
 
 | Stage | Milestone | Status |
 | :--- | :--- | :--- |
-| **Phase 1** | Feature selection & Architecture confirmation | In Progress |
+| **Phase 1** | Feature selection & Architecture confirmation | Completed |
 | **Phase 2** | Backend API & Database Setup | Pending |
 | **Phase 3** | Flutter UI Implementation (matching reference UI) | Pending |
 | **Phase 4** | End-to-end Backend & Socket Integration | Pending |
