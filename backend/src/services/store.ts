@@ -228,6 +228,44 @@ class DataStore {
     }
   }
 
+  async updateAstrologer(id: string, updates: Partial<Astrologer>): Promise<Astrologer | null> {
+    const astro = await this.getAstrologer(id);
+    if (!astro) return null;
+    const updated = { ...astro, ...updates };
+    this.astrologers.set(id, updated);
+    if (supabase) {
+      await supabase.from('astrologers').update(updates).eq('id', id);
+    }
+    return updated;
+  }
+
+  async getConsultationsByAstrologer(astrologerId: string): Promise<Consultation[]> {
+    if (supabase) {
+      const { data } = await supabase
+        .from('consultations')
+        .select('*')
+        .eq('astrologer_id', astrologerId)
+        .order('created_at', { ascending: false });
+      if (data) return data as Consultation[];
+    }
+    return Array.from(this.consultations.values())
+      .filter((c) => c.astrologer_id === astrologerId)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  }
+
+  async getAstrologerEarnings(astrologerId: string) {
+    const sessions = await this.getConsultationsByAstrologer(astrologerId);
+    const totalMinutes = sessions.reduce((acc, s) => acc + Math.ceil(s.duration_seconds / 60), 0);
+    const totalEarned = sessions.reduce((acc, s) => acc + (s.total_deducted || 0), 0);
+    return {
+      astrologerId,
+      totalEarned,
+      totalMinutes,
+      completedSessions: sessions.filter((s) => s.status === 'completed').length,
+      recentSessions: sessions.slice(0, 10),
+    };
+  }
+
   // Wallet operations
   async rechargeWallet(userId: string, amount: number): Promise<{ profile: Profile; tx: WalletTransaction }> {
     const profile = (await this.getProfile(userId)) || {

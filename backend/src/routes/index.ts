@@ -4,13 +4,27 @@ import { getUserProfile, updateUserProfile, mockLogin } from '../controllers/use
 import { getWalletBalance, rechargeWallet, getTransactions } from '../controllers/wallet.controller.js';
 import { getConsultationHistory, getConsultationMessages } from '../controllers/consultations.controller.js';
 import { getHoroscope, generateKundli } from '../controllers/astrology.controller.js';
+import {
+  getPanditProfile,
+  updatePanditStatus,
+  getPanditEarnings,
+  getPanditSessions,
+  panditLogin,
+} from '../controllers/pandit.controller.js';
 
 const router = Router();
 
 // Auth & User Routes
 router.post('/auth/login', mockLogin);
+router.post('/auth/pandit-login', panditLogin);
 router.get('/user/profile', getUserProfile);
 router.put('/user/profile', updateUserProfile);
+
+// Pandit / Astrologer Dashboard & Management
+router.get('/pandit/profile', getPanditProfile);
+router.put('/pandit/status', updatePanditStatus);
+router.get('/pandit/earnings/:id', getPanditEarnings);
+router.get('/pandit/sessions/:id', getPanditSessions);
 
 // Astrologers Marketplace
 router.get('/astrologers', getAstrologers);

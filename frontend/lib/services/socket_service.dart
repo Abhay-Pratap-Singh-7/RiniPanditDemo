@@ -7,15 +7,18 @@ import '../models/chat_message.dart';
 class SocketService {
   WebSocketChannel? _channel;
   StreamSubscription? _subscription;
+  String? _currentUserId;
 
   // Stream Controllers
   final _startedController = StreamController<Map<String, dynamic>>.broadcast();
+  final _incomingRequestController = StreamController<Map<String, dynamic>>.broadcast();
   final _messageController = StreamController<ChatMessage>.broadcast();
   final _tickController = StreamController<Map<String, dynamic>>.broadcast();
   final _endedController = StreamController<Map<String, dynamic>>.broadcast();
   final _errorController = StreamController<String>.broadcast();
 
   Stream<Map<String, dynamic>> get onConsultationStarted => _startedController.stream;
+  Stream<Map<String, dynamic>> get onIncomingRequest => _incomingRequestController.stream;
   Stream<ChatMessage> get onChatMessage => _messageController.stream;
   Stream<Map<String, dynamic>> get onBillingTick => _tickController.stream;
   Stream<Map<String, dynamic>> get onConsultationEnded => _endedController.stream;
@@ -25,8 +28,13 @@ class SocketService {
   bool get isConnected => _isConnected;
 
   void connect([String userId = ApiConstants.defaultUserId]) {
-    if (_isConnected) return;
+    if (_isConnected && _currentUserId == userId) return;
 
+    if (_isConnected) {
+      disconnect();
+    }
+
+    _currentUserId = userId;
     final uri = Uri.parse('${ApiConstants.wsUrl}?userId=$userId');
     try {
       _channel = WebSocketChannel.connect(uri);
@@ -42,6 +50,9 @@ class SocketService {
             switch (event) {
               case 'consultation:started':
                 _startedController.add(payload);
+                break;
+              case 'consultation:incoming_request':
+                _incomingRequestController.add(payload);
                 break;
               case 'chat:message':
                 _messageController.add(ChatMessage.fromJson(payload));
@@ -80,6 +91,14 @@ class SocketService {
     }));
   }
 
+  void acceptConsultation(String sessionId) {
+    if (!_isConnected) connect();
+    _channel?.sink.add(jsonEncode({
+      'event': 'consultation:accept',
+      'data': {'sessionId': sessionId},
+    }));
+  }
+
   void sendMessage(String sessionId, String content) {
     if (!_isConnected) connect();
     _channel?.sink.add(jsonEncode({
@@ -103,5 +122,6 @@ class SocketService {
     _subscription?.cancel();
     _channel?.sink.close();
     _isConnected = false;
+    _currentUserId = null;
   }
 }

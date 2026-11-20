@@ -4,6 +4,7 @@ import '../core/theme/app_theme.dart';
 import '../providers/app_state.dart';
 import '../screens/wallet_screen.dart';
 import '../screens/profile_screen.dart';
+import '../screens/role_selection_screen.dart';
 
 class AppHeader extends StatelessWidget implements PreferredSizeWidget {
   final String title;
@@ -23,7 +24,8 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
     final appState = context.watch<AppState>();
 
     return AppBar(
-      backgroundColor: AppTheme.backgroundDark,
+      backgroundColor: Colors.transparent,
+      elevation: 0,
       title: Row(
         children: [
           Container(
@@ -54,6 +56,18 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
         ],
       ),
       actions: [
+        // Role Switcher Button
+        IconButton(
+          icon: const Icon(Icons.swap_horiz, color: AppTheme.cardLilac, size: 22),
+          tooltip: 'Switch Role (Client / Pandit)',
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const RoleSelectionScreen()),
+            );
+          },
+        ),
+
         if (showBalance)
           GestureDetector(
             onTap: () {
@@ -63,8 +77,8 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
               );
             },
             child: Container(
-              margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 color: AppTheme.surfaceTile,
                 borderRadius: BorderRadius.circular(20),
@@ -72,7 +86,7 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.account_balance_wallet_outlined, color: AppTheme.cardLilac, size: 16),
+                  const Icon(Icons.account_balance_wallet_outlined, color: AppTheme.cardLilac, size: 15),
                   const SizedBox(width: 6),
                   Text(
                     '₹${appState.walletBalance.toStringAsFixed(0)}',
@@ -83,11 +97,12 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
                     ),
                   ),
                   const SizedBox(width: 4),
-                  const Icon(Icons.add, color: AppTheme.cardCoral, size: 16),
+                  const Icon(Icons.add, color: AppTheme.cardCoral, size: 15),
                 ],
               ),
             ),
           ),
+
         IconButton(
           icon: CircleAvatar(
             radius: 17,
@@ -106,7 +121,7 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
             );
           },
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 6),
       ],
     );
   }

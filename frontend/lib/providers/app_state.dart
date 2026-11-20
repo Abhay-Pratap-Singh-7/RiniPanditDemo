@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../core/constants/api_constants.dart';
 import '../models/user_profile.dart';
 import '../models/astrologer.dart';
 import '../models/consultation.dart';
@@ -17,12 +18,23 @@ class AppState extends ChangeNotifier {
   ApiService get api => _api;
   SocketService get socket => _socket;
 
-  // State Variables
+  // Active Role ('user' | 'pandit')
+  String _currentRole = 'user';
+  String get currentRole => _currentRole;
+  bool get isPandit => _currentRole == 'pandit';
+
+  // Client State
   UserProfile? _userProfile;
   List<Astrologer> _astrologers = [];
   List<WalletTransaction> _transactions = [];
   Horoscope? _currentHoroscope;
   KundliResult? _currentKundli;
+
+  // Pandit State
+  Astrologer? _currentPandit;
+  Map<String, dynamic> _panditEarnings = {};
+  List<ConsultationSession> _panditSessions = [];
+  Map<String, dynamic>? _incomingRequest;
 
   bool _isLoading = false;
   String? _errorMessage;
@@ -30,6 +42,8 @@ class AppState extends ChangeNotifier {
   // Active Consultation State
   ConsultationSession? _activeSession;
   Astrologer? _activeAstrologer;
+  UserProfile? _activeConsultationUser;
+  double _activeConsultationEarned = 0.0;
   List<ChatMessage> _messages = [];
   int _activeSessionElapsedSeconds = 0;
   Timer? _localSecondsTimer;
@@ -41,11 +55,19 @@ class AppState extends ChangeNotifier {
   List<WalletTransaction> get transactions => _transactions;
   Horoscope? get currentHoroscope => _currentHoroscope;
   KundliResult? get currentKundli => _currentKundli;
+
+  Astrologer? get currentPandit => _currentPandit;
+  Map<String, dynamic> get panditEarnings => _panditEarnings;
+  List<ConsultationSession> get panditSessions => _panditSessions;
+  Map<String, dynamic>? get incomingRequest => _incomingRequest;
+
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
   ConsultationSession? get activeSession => _activeSession;
   Astrologer? get activeAstrologer => _activeAstrologer;
+  UserProfile? get activeConsultationUser => _activeConsultationUser;
+  double get activeConsultationEarned => _activeConsultationEarned;
   List<ChatMessage> get messages => _messages;
   int get activeSessionElapsedSeconds => _activeSessionElapsedSeconds;
 
@@ -58,15 +80,17 @@ class AppState extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Connect WebSocket
-      _socket.connect();
       _listenToSocketEvents();
 
-      // Fetch Profile, Astrologers, Horoscope
+      // Initial socket connection as default user
+      _socket.connect(ApiConstants.defaultUserId);
+
+      // Fetch Initial User Data
       await Future.wait([
         loadProfile(),
         loadAstrologers(),
         loadHoroscope('aries'),
+        loadPanditData('b0000000-0000-0000-0000-000000000001'),
       ]);
     } catch (e) {
       _errorMessage = e.toString();
@@ -78,12 +102,19 @@ class AppState extends ChangeNotifier {
 
   void _listenToSocketEvents() {
     _socket.onConsultationStarted.listen((data) {
+      _incomingRequest = null;
       _activeSession = ConsultationSession.fromJson(data['session']);
-      _activeAstrologer = Astrologer.fromJson(data['astrologer']);
+      if (data['astrologer'] != null) {
+        _activeAstrologer = Astrologer.fromJson(data['astrologer']);
+      }
+      if (data['user'] != null) {
+        _activeConsultationUser = UserProfile.fromJson(data['user']);
+      }
       _messages = [];
       _activeSessionElapsedSeconds = 0;
+      _activeConsultationEarned = _activeSession?.ratePerMinute ?? 0.0;
 
-      // Start local ticking timer for smooth UI seconds counter
+      // Start local ticking timer
       _localSecondsTimer?.cancel();
       _localSecondsTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
         _activeSessionElapsedSeconds++;
@@ -93,14 +124,19 @@ class AppState extends ChangeNotifier {
       notifyListeners();
     });
 
+    _socket.onIncomingRequest.listen((data) {
+      _incomingRequest = data;
+      notifyListeners();
+    });
+
     _socket.onChatMessage.listen((msg) {
       _messages.add(msg);
       notifyListeners();
     });
 
     _socket.onBillingTick.listen((data) {
-      if (_userProfile != null) {
-        final newBal = (data['walletBalance'] as num?)?.toDouble() ?? _userProfile!.walletBalance;
+      if (data['walletBalance'] != null && _userProfile != null) {
+        final newBal = (data['walletBalance'] as num).toDouble();
         _userProfile = UserProfile(
           id: _userProfile!.id,
           phone: _userProfile!.phone,
@@ -114,6 +150,10 @@ class AppState extends ChangeNotifier {
           avatarUrl: _userProfile!.avatarUrl,
         );
       }
+
+      if (data['earnedAmount'] != null) {
+        _activeConsultationEarned = (data['earnedAmount'] as num).toDouble();
+      }
       notifyListeners();
     });
 
@@ -121,7 +161,13 @@ class AppState extends ChangeNotifier {
       _localSecondsTimer?.cancel();
       _activeSession = null;
       _activeAstrologer = null;
-      loadProfile();
+      _activeConsultationUser = null;
+      _incomingRequest = null;
+      if (isPandit) {
+        loadPanditData();
+      } else {
+        loadProfile();
+      }
       notifyListeners();
     });
 
@@ -131,6 +177,86 @@ class AppState extends ChangeNotifier {
     });
   }
 
+  // Role Management
+  Future<void> switchRole(String role, {String? panditId}) async {
+    _currentRole = role;
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      if (role == 'pandit') {
+        final pid = panditId ?? _currentPandit?.id ?? 'b0000000-0000-0000-0000-000000000001';
+        _currentPandit = await _api.panditLogin(id: pid);
+        _socket.connect(pid);
+        await loadPanditData(pid);
+      } else {
+        _socket.connect(ApiConstants.defaultUserId);
+        await loadProfile();
+      }
+    } catch (e) {
+      _errorMessage = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Pandit Operations
+  Future<void> loadPanditData([String? id]) async {
+    final panditId = id ?? _currentPandit?.id ?? 'b0000000-0000-0000-0000-000000000001';
+    try {
+      _currentPandit = await _api.getPanditProfile(panditId);
+      _panditEarnings = await _api.getPanditEarnings(panditId);
+      _panditSessions = await _api.getPanditSessions(panditId);
+      notifyListeners();
+    } catch (e) {
+      // fallback
+    }
+  }
+
+  Future<void> togglePanditOnline(bool isOnline) async {
+    if (_currentPandit == null) return;
+    try {
+      _currentPandit = await _api.updatePanditStatus(
+        id: _currentPandit!.id,
+        isOnline: isOnline,
+      );
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+    }
+  }
+
+  Future<void> updatePanditRate(double newRate) async {
+    if (_currentPandit == null) return;
+    try {
+      _currentPandit = await _api.updatePanditStatus(
+        id: _currentPandit!.id,
+        ratePerMinute: newRate,
+      );
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+    }
+  }
+
+  void acceptIncomingRequest() {
+    if (_incomingRequest != null) {
+      final sessionId = _incomingRequest!['session']['id'];
+      _socket.acceptConsultation(sessionId);
+      _incomingRequest = null;
+      notifyListeners();
+    }
+  }
+
+  void declineIncomingRequest() {
+    _incomingRequest = null;
+    notifyListeners();
+  }
+
+  // Client Operations
   Future<void> loadProfile() async {
     try {
       _userProfile = await _api.getUserProfile();

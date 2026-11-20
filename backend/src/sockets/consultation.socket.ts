@@ -130,27 +130,62 @@ export function setupConsultationSockets(wss: WebSocketServer) {
               data: {
                 session: consultation,
                 astrologer: astro,
+                user: user,
                 message: `Consultation started with ${astro.display_name}`,
               },
             };
             ws.send(JSON.stringify(responsePayload));
 
-            // Demo Helper: Send a warm welcome message from the astrologer
-            setTimeout(async () => {
-              const welcomeMsg = await store.addMessage({
-                consultation_id: consultation.id,
-                sender_id: astrologerId,
-                content: `Namaste ${user.full_name || 'ji'}! 🙏 I have opened your birth chart. Please tell me your question or concern.`,
-                is_read: true,
-              });
+            // Notify pandit if connected
+            broadcastToUser(astrologerId, {
+              event: 'consultation:incoming_request',
+              data: {
+                session: consultation,
+                user: user,
+                astrologer: astro,
+              },
+            });
+            broadcastToUser(astrologerId, responsePayload);
 
-              ws.send(
-                JSON.stringify({
-                  event: 'chat:message',
-                  data: welcomeMsg,
-                })
-              );
-            }, 1000);
+            // Demo Helper: Send a warm welcome message from the astrologer if not live
+            const isPanditOnline = userSocketMap.has(astrologerId);
+            if (!isPanditOnline) {
+              setTimeout(async () => {
+                const welcomeMsg = await store.addMessage({
+                  consultation_id: consultation.id,
+                  sender_id: astrologerId,
+                  content: `Namaste ${user?.full_name || 'ji'}. I have opened your birth chart. Please tell me your question or concern.`,
+                  is_read: true,
+                });
+
+                ws.send(
+                  JSON.stringify({
+                    event: 'chat:message',
+                    data: welcomeMsg,
+                  })
+                );
+              }, 1000);
+            }
+            break;
+          }
+
+          case 'consultation:accept': {
+            const { sessionId } = data;
+            const consultation = await store.getConsultation(sessionId);
+            if (consultation) {
+              const astro = await store.getAstrologer(consultation.astrologer_id);
+              const user = await store.getProfile(consultation.user_id);
+              const startedPayload = {
+                event: 'consultation:started',
+                data: {
+                  session: consultation,
+                  astrologer: astro,
+                  user: user,
+                },
+              };
+              broadcastToUser(consultation.user_id, startedPayload);
+              broadcastToUser(consultation.astrologer_id, startedPayload);
+            }
             break;
           }
 
@@ -162,7 +197,7 @@ export function setupConsultationSockets(wss: WebSocketServer) {
               return;
             }
 
-            // Save user message
+            // Save sender message
             const savedMsg = await store.addMessage({
               consultation_id: sessionId,
               sender_id: userId,
@@ -170,7 +205,7 @@ export function setupConsultationSockets(wss: WebSocketServer) {
               is_read: true,
             });
 
-            // Echo back to user
+            // Echo back to sender
             ws.send(
               JSON.stringify({
                 event: 'chat:message',
@@ -178,36 +213,40 @@ export function setupConsultationSockets(wss: WebSocketServer) {
               })
             );
 
-            // Send to astrologer if connected
-            broadcastToUser(consultation.astrologer_id, {
+            // Send to recipient (User or Astrologer)
+            const targetRecipientId = userId === consultation.user_id ? consultation.astrologer_id : consultation.user_id;
+            broadcastToUser(targetRecipientId, {
               event: 'chat:message',
               data: savedMsg,
             });
 
-            // Demo Auto-Reply Simulator: If testing as single user, simulate astrologer guidance
-            setTimeout(async () => {
-              const replies = [
-                'I see a strong Jupiter transit influencing your 10th house. This signifies auspicious career movements.',
-                'Your current Mahadasha suggests focusing on patience. Chanting Gayatri mantra will bring mental clarity.',
-                'The alignment shows good financial prospects. Wear a silver ring or consult for gemstone suitability.',
-                'Yes, I recommend performing a simple Shani remedy on Saturday evening to ease obstacles.',
-              ];
-              const randomReply = replies[Math.floor(Math.random() * replies.length)];
+            // Demo Auto-Reply Simulator only if the astrologer is NOT live
+            const isPanditActive = userSocketMap.has(consultation.astrologer_id);
+            if (userId === consultation.user_id && !isPanditActive) {
+              setTimeout(async () => {
+                const replies = [
+                  'I see a strong Jupiter transit influencing your 10th house. This signifies auspicious career movements.',
+                  'Your current Mahadasha suggests focusing on patience. Chanting Gayatri mantra will bring mental clarity.',
+                  'The alignment shows good financial prospects. Wear a silver ring or consult for gemstone suitability.',
+                  'Yes, I recommend performing a simple Shani remedy on Saturday evening to ease obstacles.',
+                ];
+                const randomReply = replies[Math.floor(Math.random() * replies.length)];
 
-              const astroMsg = await store.addMessage({
-                consultation_id: sessionId,
-                sender_id: consultation.astrologer_id,
-                content: randomReply,
-                is_read: true,
-              });
+                const astroMsg = await store.addMessage({
+                  consultation_id: sessionId,
+                  sender_id: consultation.astrologer_id,
+                  content: randomReply,
+                  is_read: true,
+                });
 
-              ws.send(
-                JSON.stringify({
-                  event: 'chat:message',
-                  data: astroMsg,
-                })
-              );
-            }, 1500);
+                ws.send(
+                  JSON.stringify({
+                    event: 'chat:message',
+                    data: astroMsg,
+                  })
+                );
+              }, 1500);
+            }
 
             break;
           }
