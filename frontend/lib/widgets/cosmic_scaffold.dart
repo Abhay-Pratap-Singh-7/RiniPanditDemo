@@ -15,7 +15,7 @@ class CosmicScaffold extends StatelessWidget {
     this.bottomNavigationBar,
     this.floatingActionButton,
     this.extendBody = true,
-    this.extendBodyBehindAppBar = true,
+    this.extendBodyBehindAppBar = false,
   });
 
   @override
@@ -38,7 +38,7 @@ class CosmicScaffold extends StatelessWidget {
             color: const Color(0x38080B1E),
           ),
         ),
-        // Scaffold with transparent canvas extending behind AppBar and BottomNav
+        // Scaffold with transparent canvas extending behind BottomNav
         Scaffold(
           backgroundColor: Colors.transparent,
           extendBody: extendBody,

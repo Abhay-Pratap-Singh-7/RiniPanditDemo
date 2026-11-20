@@ -30,6 +30,7 @@ class _AstrologerListScreenState extends State<AstrologerListScreen> {
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
+    final canPop = Navigator.canPop(context);
 
     final filtered = _selectedCategory == 'All'
         ? appState.astrologers
@@ -38,66 +39,76 @@ class _AstrologerListScreenState extends State<AstrologerListScreen> {
                 .any((s) => s.toLowerCase().contains(_selectedCategory.toLowerCase())))
             .toList();
 
-    return CosmicScaffold(
-      appBar: const AppHeader(title: 'Astrologer Marketplace'),
-      body: Column(
-        children: [
-          // Filter Chips
-          SizedBox(
-            height: 52,
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              scrollDirection: Axis.horizontal,
-              itemCount: _categories.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 8),
-              itemBuilder: (context, index) {
-                final cat = _categories[index];
-                final isSelected = cat == _selectedCategory;
+    final content = Column(
+      children: [
+        const AppHeader(title: 'Astrologer Marketplace'),
 
-                return GestureDetector(
-                  onTap: () {
-                    setState(() => _selectedCategory = cat);
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: isSelected ? AppTheme.cardPurple : AppTheme.surfaceTile,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: isSelected ? AppTheme.cardPurple : AppTheme.borderSubtle,
-                        width: 1,
-                      ),
+        // Filter Chips Row
+        SizedBox(
+          height: 52,
+          child: ListView.separated(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            scrollDirection: Axis.horizontal,
+            itemCount: _categories.length,
+            separatorBuilder: (_, _) => const SizedBox(width: 8),
+            itemBuilder: (context, index) {
+              final cat = _categories[index];
+              final isSelected = cat == _selectedCategory;
+
+              return GestureDetector(
+                onTap: () {
+                  setState(() => _selectedCategory = cat);
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: isSelected ? AppTheme.cardPurple : AppTheme.surfaceTile,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isSelected ? AppTheme.cardPurple : AppTheme.borderSubtle,
+                      width: 1,
                     ),
-                    child: Center(
-                      child: Text(
-                        cat,
-                        style: TextStyle(
-                          color: isSelected ? Colors.white : AppTheme.textMuted,
-                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                          fontSize: 13,
-                        ),
+                  ),
+                  child: Center(
+                    child: Text(
+                      cat,
+                      style: TextStyle(
+                        color: isSelected ? Colors.white : AppTheme.textMuted,
+                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                        fontSize: 13,
                       ),
                     ),
                   ),
-                );
-              },
-            ),
+                ),
+              );
+            },
           ),
+        ),
 
-          // List
-          Expanded(
-            child: filtered.isEmpty
-                ? const Center(
-                    child: Text('No astrologers found in this category', style: TextStyle(color: AppTheme.textMuted)),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.only(bottom: 110, top: 4),
-                    itemCount: filtered.length,
-                    itemBuilder: (context, index) => AstrologerCard(astrologer: filtered[index]),
+        // Astrologer Cards List
+        Expanded(
+          child: filtered.isEmpty
+              ? const Center(
+                  child: Text(
+                    'No astrologers found in this category',
+                    style: TextStyle(color: AppTheme.textMuted),
                   ),
-          ),
-        ],
-      ),
+                )
+              : ListView.builder(
+                  padding: EdgeInsets.only(bottom: canPop ? 30 : 110, top: 4),
+                  itemCount: filtered.length,
+                  itemBuilder: (context, index) => AstrologerCard(astrologer: filtered[index]),
+                ),
+        ),
+      ],
     );
+
+    if (canPop) {
+      return CosmicScaffold(
+        body: SafeArea(child: content),
+      );
+    }
+
+    return content;
   }
 }
