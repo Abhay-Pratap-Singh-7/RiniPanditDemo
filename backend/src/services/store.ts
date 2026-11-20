@@ -75,31 +75,6 @@ class DataStore {
   }
 
   private initSeeds() {
-    const demoUser: Profile = {
-      id: 'a0000000-0000-0000-0000-000000000001',
-      phone: '+919876543210',
-      full_name: 'Rahul Sharma',
-      gender: 'male',
-      dob: '1995-08-15',
-      tob: '07:30',
-      pob_city: 'New Delhi',
-      pob_country: 'India',
-      wallet_balance: 500.0,
-      avatar_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80',
-    };
-    this.profiles.set(demoUser.id, demoUser);
-    this.profiles.set(demoUser.phone, demoUser);
-
-    this.transactions.push({
-      id: 't0000000-0000-0000-0000-000000000001',
-      user_id: demoUser.id,
-      amount: 500.0,
-      type: 'recharge',
-      description: 'Initial Welcome Demo Credits',
-      balance_after: 500.0,
-      created_at: new Date().toISOString(),
-    });
-
     const seedAstrologers: Astrologer[] = [
       {
         id: 'b0000000-0000-0000-0000-000000000001',

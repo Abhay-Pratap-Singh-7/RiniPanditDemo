@@ -155,58 +155,48 @@ export async function signUp(req: Request, res: Response) {
 
 export async function signIn(req: Request, res: Response) {
   try {
-    const { email, password, phone } = req.body;
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email and password are required.',
+      });
+    }
 
     let authUserId: string = '';
     let accessToken: string = '';
     let refreshToken: string = '';
-    let detectedEmail: string = email || '';
+    let detectedEmail: string = email;
 
     // 1. Supabase Authentication
-    if (supabase && email && password) {
+    if (supabase) {
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (signInError) {
+      if (signInError || !signInData.user) {
         return res.status(401).json({
           success: false,
-          message: signInError.message,
-        });
-      }
-
-      if (!signInData.user) {
-        return res.status(401).json({
-          success: false,
-          message: 'Invalid email or password.',
+          message: signInError?.message || 'Invalid email or password.',
         });
       }
 
       authUserId = signInData.user.id;
-      accessToken = signInData.session?.access_token || `token_${authUserId}`;
+      accessToken = signInData.session?.access_token || '';
       refreshToken = signInData.session?.refresh_token || '';
       detectedEmail = signInData.user.email || email;
     } else {
-      // Phone / Fallback Login
-      const lookupPhone = phone || (email && !email.includes('@') ? email : '+919876543210');
-      let profile = await store.getProfile(lookupPhone);
+      const profile = await store.getProfile(email);
       if (!profile) {
-        authUserId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-        profile = await store.updateProfile(authUserId, {
-          phone: lookupPhone,
-          full_name: 'Devotee / Client',
-          wallet_balance: 100.0,
-          gender: 'male',
-          dob: '1995-01-01',
-          tob: '10:00',
-          pob_city: 'Delhi',
-          pob_country: 'India',
-          avatar_url: '',
+        return res.status(401).json({
+          success: false,
+          message: 'Account not found. Please register first.',
         });
       }
       authUserId = profile.id;
-      accessToken = `demo_jwt_token_${authUserId}`;
+      accessToken = `token_${authUserId}`;
     }
 
     // 2. Fetch User Profile

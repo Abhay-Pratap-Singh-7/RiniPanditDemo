@@ -1,10 +1,13 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { store } from '../services/store.js';
 import { AuthRequest } from '../middleware/auth.middleware.js';
 
 export async function getWalletBalance(req: AuthRequest, res: Response) {
   try {
-    const userId = req.user?.id || (req.query.userId as string) || 'a0000000-0000-0000-0000-000000000001';
+    const userId = req.user?.id || (req.query.userId as string);
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Authentication required' });
+    }
     const profile = await store.getProfile(userId);
     res.json({
       success: true,
@@ -20,7 +23,10 @@ export async function getWalletBalance(req: AuthRequest, res: Response) {
 
 export async function rechargeWallet(req: AuthRequest, res: Response) {
   try {
-    const userId = req.user?.id || req.body.userId || 'a0000000-0000-0000-0000-000000000001';
+    const userId = req.user?.id || req.body.userId;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Authentication required' });
+    }
     const { amount } = req.body;
     if (!amount || Number(amount) <= 0) {
       return res.status(400).json({ success: false, message: 'Invalid recharge amount' });
@@ -41,7 +47,10 @@ export async function rechargeWallet(req: AuthRequest, res: Response) {
 
 export async function getTransactions(req: AuthRequest, res: Response) {
   try {
-    const userId = req.user?.id || (req.query.userId as string) || 'a0000000-0000-0000-0000-000000000001';
+    const userId = req.user?.id || (req.query.userId as string);
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Authentication required' });
+    }
     const transactions = await store.getTransactions(userId);
     res.json({ success: true, data: transactions });
   } catch (err: any) {

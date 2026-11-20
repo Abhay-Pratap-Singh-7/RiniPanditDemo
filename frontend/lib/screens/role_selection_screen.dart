@@ -3,8 +3,6 @@ import 'package:provider/provider.dart';
 import '../core/theme/app_theme.dart';
 import '../providers/app_state.dart';
 import '../widgets/cosmic_scaffold.dart';
-import 'home_screen.dart';
-import 'pandit/pandit_dashboard_screen.dart';
 import 'auth_screen.dart';
 
 class RoleSelectionScreen extends StatelessWidget {
@@ -83,12 +81,10 @@ class RoleSelectionScreen extends StatelessWidget {
                 subtitle: 'Consult verified astrologers, read daily horoscopes, and calculate Janampatri birth charts.',
                 assetPath: 'assets/icons/tile_zodiac.png',
                 gradientColors: [AppTheme.cardPurple, AppTheme.surfaceDark],
-                onTap: () async {
-                  await appState.switchRole('user');
-                  if (!context.mounted) return;
-                  Navigator.pushReplacement(
+                onTap: () {
+                  Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const HomeScreen()),
+                    MaterialPageRoute(builder: (_) => const AuthScreen(initialRole: 'user')),
                   );
                 },
               ),
@@ -101,12 +97,10 @@ class RoleSelectionScreen extends StatelessWidget {
                 subtitle: 'Manage consultation sessions, set availability, accept live chat requests, and track earnings.',
                 assetPath: 'assets/icons/tile_vedic.png',
                 gradientColors: [AppTheme.cardCoral, AppTheme.surfaceDark],
-                onTap: () async {
-                  await appState.switchRole('pandit', panditId: 'b0000000-0000-0000-0000-000000000001');
-                  if (!context.mounted) return;
-                  Navigator.pushReplacement(
+                onTap: () {
+                  Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const PanditDashboardScreen()),
+                    MaterialPageRoute(builder: (_) => const AuthScreen(initialRole: 'pandit')),
                   );
                 },
               ),

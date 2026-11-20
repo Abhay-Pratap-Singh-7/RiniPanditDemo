@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { authenticate } from '../middleware/auth.middleware.js';
 import { signUp, signIn, getMe, signOut, refreshToken } from '../controllers/auth.controller.js';
 import { getAstrologers, getAstrologerById } from '../controllers/astrologers.controller.js';
-import { getUserProfile, updateUserProfile, mockLogin } from '../controllers/user.controller.js';
+import { getUserProfile, updateUserProfile } from '../controllers/user.controller.js';
 import { getWalletBalance, rechargeWallet, getTransactions } from '../controllers/wallet.controller.js';
 import { getConsultationHistory, getConsultationMessages } from '../controllers/consultations.controller.js';
 import { getHoroscope, getAllHoroscopes, generateKundli } from '../controllers/astrology.controller.js';
@@ -28,8 +28,7 @@ router.get('/auth/me', getMe);
 router.post('/auth/logout', signOut);
 router.post('/auth/refresh', refreshToken);
 
-// Legacy / Demo quick login endpoints
-router.post('/auth/quick-login', mockLogin);
+// Pandit / Astrologer authentication
 router.post('/auth/pandit-login', panditLogin);
 
 // ==========================================

@@ -46,13 +46,6 @@ export async function authenticate(req: AuthRequest, res: Response, next: NextFu
       }
     }
 
-    // 2. Fallback local / demo token parsing
-    if (token.startsWith('demo_jwt_token_')) {
-      const id = token.replace('demo_jwt_token_', '');
-      req.user = { id };
-      return next();
-    }
-
     // Default passthrough
     return next();
   } catch (err) {

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'core/theme/app_theme.dart';
 import 'providers/app_state.dart';
-import 'screens/role_selection_screen.dart';
+import 'screens/auth_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,7 +25,7 @@ class RiniPanditApp extends StatelessWidget {
       title: 'Rini Pandit Astro',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
-      home: const RoleSelectionScreen(),
+      home: const AuthScreen(),
     );
   }
 }

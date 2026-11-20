@@ -93,15 +93,10 @@ class AppState extends ChangeNotifier {
     try {
       _listenToSocketEvents();
 
-      // Initial socket connection as default user
-      _socket.connect(ApiConstants.defaultUserId);
-
-      // Fetch Initial User Data
+      // Load public marketplace and horoscope catalog
       await Future.wait([
-        loadProfile(),
         loadAstrologers(),
         loadAllHoroscopes(),
-        loadPanditData('b0000000-0000-0000-0000-000000000001'),
       ]);
     } catch (e) {
       _errorMessage = e.toString();

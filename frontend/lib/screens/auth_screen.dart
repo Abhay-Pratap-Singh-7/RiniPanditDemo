@@ -19,11 +19,11 @@ class _AuthScreenState extends State<AuthScreen> {
   bool _isSignUp = false;
   late String _role;
 
-  final _emailController = TextEditingController(text: 'rahul@rinipandit.com');
-  final _passwordController = TextEditingController(text: 'Password@123');
-  final _nameController = TextEditingController(text: 'Rahul Sharma');
-  final _phoneController = TextEditingController(text: '+919876543210');
-  final _rateController = TextEditingController(text: '35');
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _nameController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _rateController = TextEditingController(text: '25');
 
   bool _obscurePassword = true;
 
@@ -50,7 +50,14 @@ class _AuthScreenState extends State<AuthScreen> {
 
     if (email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter both email and password')),
+        const SnackBar(content: Text('Please enter both email and password.')),
+      );
+      return;
+    }
+
+    if (_isSignUp && _nameController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter your full name.')),
       );
       return;
     }
@@ -79,7 +86,7 @@ class _AuthScreenState extends State<AuthScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            _isSignUp ? 'Supabase Account created successfully.' : 'Signed in successfully via Supabase.',
+            _isSignUp ? 'Account created successfully with Supabase.' : 'Signed in successfully.',
           ),
           backgroundColor: AppTheme.cardPurple,
         ),
@@ -99,7 +106,7 @@ class _AuthScreenState extends State<AuthScreen> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(appState.errorMessage ?? 'Authentication failed'),
+          content: Text(appState.errorMessage ?? 'Authentication failed.'),
           backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
@@ -114,26 +121,26 @@ class _AuthScreenState extends State<AuthScreen> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Top Icon / Emblem
+                // Top Emblem
                 Center(
                   child: Container(
-                    width: 72,
-                    height: 72,
+                    width: 76,
+                    height: 76,
                     decoration: BoxDecoration(
                       color: AppTheme.cardPurple.withAlpha(45),
                       shape: BoxShape.circle,
                       border: Border.all(color: AppTheme.cardLilac, width: 1.5),
                     ),
-                    child: const Icon(Icons.auto_awesome, color: AppTheme.cardLilac, size: 36),
+                    child: const Icon(Icons.auto_awesome, color: AppTheme.cardLilac, size: 38),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 18),
 
-                // App Brand Name
+                // Title
                 Center(
                   child: Wrap(
                     alignment: WrapAlignment.center,
@@ -141,7 +148,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       Text(
                         'Rini Pandit Astrology',
                         style: TextStyle(
-                          fontSize: 24,
+                          fontSize: 25,
                           fontWeight: FontWeight.w800,
                           color: Colors.white,
                           letterSpacing: -0.4,
@@ -151,7 +158,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
 
                 // Subtitle
                 Center(
@@ -159,7 +166,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     alignment: WrapAlignment.center,
                     children: [
                       Text(
-                        _isSignUp ? 'Create your Supabase account' : 'Sign in to access live astrology consultations',
+                        _isSignUp ? 'Create your account with Supabase' : 'Sign in to access your consultations & wallet',
                         style: const TextStyle(fontSize: 13, color: AppTheme.textMuted),
                         textAlign: TextAlign.center,
                         softWrap: true,
@@ -167,7 +174,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 26),
 
                 // Role Selector Tabs (Client vs Pandit)
                 Container(
@@ -228,7 +235,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 ),
                 const SizedBox(height: 20),
 
-                // Form Container
+                // Form Container Card
                 Container(
                   padding: const EdgeInsets.all(22),
                   decoration: BoxDecoration(
@@ -246,6 +253,8 @@ class _AuthScreenState extends State<AuthScreen> {
                           style: const TextStyle(color: Colors.white, fontSize: 14),
                           decoration: InputDecoration(
                             labelText: _role == 'pandit' ? 'Acharya Full Name' : 'Full Name',
+                            hintText: 'e.g. Rahul Sharma',
+                            hintStyle: const TextStyle(color: AppTheme.textMuted, fontSize: 13),
                             prefixIcon: const Icon(Icons.person_outline_rounded, color: AppTheme.cardLilac, size: 20),
                             filled: true,
                             fillColor: AppTheme.surfaceTile,
@@ -264,6 +273,8 @@ class _AuthScreenState extends State<AuthScreen> {
                           style: const TextStyle(color: Colors.white, fontSize: 14),
                           decoration: InputDecoration(
                             labelText: 'Phone Number',
+                            hintText: '+919876543210',
+                            hintStyle: const TextStyle(color: AppTheme.textMuted, fontSize: 13),
                             prefixIcon: const Icon(Icons.phone_outlined, color: AppTheme.cardLilac, size: 20),
                             filled: true,
                             fillColor: AppTheme.surfaceTile,
@@ -303,6 +314,8 @@ class _AuthScreenState extends State<AuthScreen> {
                         style: const TextStyle(color: Colors.white, fontSize: 14),
                         decoration: InputDecoration(
                           labelText: 'Email Address',
+                          hintText: 'name@example.com',
+                          hintStyle: const TextStyle(color: AppTheme.textMuted, fontSize: 13),
                           prefixIcon: const Icon(Icons.email_outlined, color: AppTheme.cardLilac, size: 20),
                           filled: true,
                           fillColor: AppTheme.surfaceTile,
@@ -321,6 +334,8 @@ class _AuthScreenState extends State<AuthScreen> {
                         style: const TextStyle(color: Colors.white, fontSize: 14),
                         decoration: InputDecoration(
                           labelText: 'Password',
+                          hintText: 'Enter your password',
+                          hintStyle: const TextStyle(color: AppTheme.textMuted, fontSize: 13),
                           prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppTheme.cardLilac, size: 20),
                           suffixIcon: IconButton(
                             icon: Icon(
@@ -360,7 +375,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                   child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                                 )
                               : Text(
-                                  _isSignUp ? 'Create Supabase Account' : 'Sign In with Supabase',
+                                  _isSignUp ? 'Create Account' : 'Sign In',
                                   style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
                                 ),
                         ),
@@ -368,7 +383,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 18),
 
                 // Toggle Sign In vs Sign Up
                 Row(
@@ -386,33 +401,6 @@ class _AuthScreenState extends State<AuthScreen> {
                       ),
                     ),
                   ],
-                ),
-                const SizedBox(height: 8),
-
-                // One-tap guest/demo login
-                Center(
-                  child: TextButton.icon(
-                    icon: const Icon(Icons.bolt_rounded, size: 18, color: AppTheme.cardCoral),
-                    label: const Text(
-                      'Continue as Demo Guest',
-                      style: TextStyle(color: AppTheme.cardCoral, fontWeight: FontWeight.w600, fontSize: 13),
-                    ),
-                    onPressed: () async {
-                      await appState.switchRole(_role);
-                      if (!context.mounted) return;
-                      if (_role == 'pandit') {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(builder: (_) => const PanditDashboardScreen()),
-                        );
-                      } else {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(builder: (_) => const HomeScreen()),
-                        );
-                      }
-                    },
-                  ),
                 ),
               ],
             ),

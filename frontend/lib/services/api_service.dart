@@ -96,17 +96,6 @@ class ApiService {
     setAuthToken(null);
   }
 
-  Future<Map<String, dynamic>> quickLogin({String? phone, String role = 'user'}) async {
-    final response = await _dio.post('/auth/quick-login', data: {
-      'phone': phone ?? '+919876543210',
-      'role': role,
-    });
-    if (response.data['token'] != null) {
-      setAuthToken(response.data['token'] as String);
-    }
-    return response.data;
-  }
-
   Future<Astrologer> panditLogin({String id = 'b0000000-0000-0000-0000-000000000001'}) async {
     final response = await _dio.post('/auth/pandit-login', data: {'id': id});
     return Astrologer.fromJson(response.data['data']);
