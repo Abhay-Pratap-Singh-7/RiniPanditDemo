@@ -13,11 +13,28 @@ class KundliScreen extends StatefulWidget {
 }
 
 class _KundliScreenState extends State<KundliScreen> {
-  final _nameController = TextEditingController(text: 'Rahul Sharma');
-  final _dobController = TextEditingController(text: '1995-08-15');
-  final _tobController = TextEditingController(text: '07:30');
-  final _pobController = TextEditingController(text: 'New Delhi');
+  final _nameController = TextEditingController();
+  final _dobController = TextEditingController();
+  final _tobController = TextEditingController();
+  final _pobController = TextEditingController();
   String _gender = 'male';
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final prof = context.read<AppState>().userProfile;
+      if (prof != null) {
+        setState(() {
+          if (prof.fullName.isNotEmpty) _nameController.text = prof.fullName;
+          if (prof.dob.isNotEmpty) _dobController.text = prof.dob;
+          if (prof.tob.isNotEmpty) _tobController.text = prof.tob;
+          if (prof.pobCity.isNotEmpty) _pobController.text = prof.pobCity;
+          if (prof.gender.isNotEmpty) _gender = prof.gender;
+        });
+      }
+    });
+  }
 
   @override
   void dispose() {

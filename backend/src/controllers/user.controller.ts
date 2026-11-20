@@ -12,12 +12,12 @@ export async function getUserProfile(req: AuthRequest, res: Response) {
     if (!profile) {
       profile = {
         id: userId,
-        phone: req.user?.phone || `+91${Date.now().toString().slice(-10)}`,
-        full_name: req.user?.user_metadata?.full_name || 'Acharya / Devotee',
+        phone: req.user?.phone || '',
+        full_name: req.user?.user_metadata?.full_name || '',
         gender: 'male',
-        dob: '1995-01-01',
-        tob: '10:00',
-        pob_city: 'Delhi',
+        dob: '',
+        tob: '',
+        pob_city: '',
         pob_country: 'India',
         wallet_balance: req.user?.user_metadata?.role === 'pandit' ? 0.0 : 100.0,
         avatar_url: '',

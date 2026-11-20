@@ -270,7 +270,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           style: const TextStyle(color: Colors.white, fontSize: 14),
                           decoration: InputDecoration(
                             labelText: _role == 'pandit' ? 'Acharya Full Name' : 'Full Name',
-                            hintText: 'e.g. Rahul Sharma',
+                            hintText: 'Enter full name',
                             hintStyle: const TextStyle(color: AppTheme.textMuted, fontSize: 13),
                             prefixIcon: const Icon(Icons.person_outline_rounded, color: AppTheme.cardLilac, size: 20),
                             filled: true,

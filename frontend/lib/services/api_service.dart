@@ -320,8 +320,9 @@ class ApiService {
     setAuthToken(null);
   }
 
-  Future<Astrologer> panditLogin({String id = 'b0000000-0000-0000-0000-000000000001'}) async {
-    final response = await _dio.post('/auth/pandit-login', data: {'id': id});
+  Future<Astrologer> panditLogin({String? id}) async {
+    final pid = id ?? '';
+    final response = await _dio.post('/auth/pandit-login', data: {'id': pid});
     return Astrologer.fromJson(response.data['data']);
   }
 
@@ -390,6 +391,38 @@ class ApiService {
     if (specialties != null) body['specialties'] = specialties;
     if (experienceYears != null) body['experienceYears'] = experienceYears;
     if (displayName != null) body['displayName'] = displayName;
+
+    // Dual-write guarantee to Supabase REST table directly with authenticated token
+    if (ApiConstants.supabaseUrl.isNotEmpty && _authToken != null && _authToken!.isNotEmpty) {
+      try {
+        final directDio = Dio();
+        final Map<String, dynamic> directAstroData = {'id': id};
+        if (displayName != null) directAstroData['display_name'] = displayName;
+        if (ratePerMinute != null) directAstroData['rate_per_minute'] = ratePerMinute;
+        if (bio != null) directAstroData['bio'] = bio;
+        if (specialties != null) directAstroData['specialties'] = specialties;
+        if (experienceYears != null) directAstroData['experience_years'] = experienceYears;
+        if (isOnline != null) directAstroData['is_online'] = isOnline;
+        if (isBusy != null) directAstroData['is_busy'] = isBusy;
+
+        await directDio.post(
+          '${ApiConstants.supabaseUrl}/rest/v1/astrologers',
+          options: Options(
+            headers: {
+              'apikey': ApiConstants.supabaseAnonKey,
+              'Authorization': 'Bearer $_authToken',
+              'Content-Type': 'application/json',
+              'Prefer': 'resolution=merge-duplicates,return=representation',
+            },
+          ),
+          data: directAstroData,
+        );
+        debugPrint('[Supabase REST] Astrologer direct upsert confirmed.');
+      } catch (directErr) {
+        debugPrint('[Supabase REST] Direct upsert note: $directErr');
+      }
+    }
+
     final response = await _dio.put('/pandit/status', data: body);
     final data = response.data['data'];
     if (data is Map<String, dynamic>) {

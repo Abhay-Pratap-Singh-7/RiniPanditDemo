@@ -20,4 +20,17 @@ if (ENV.SUPABASE_URL && ENV.SUPABASE_SERVICE_ROLE_KEY) {
   supabaseAdmin = supabase;
 }
 
+export function getDbClient(token?: string): SupabaseClient | null {
+  if (supabaseAdmin && ENV.SUPABASE_SERVICE_ROLE_KEY) {
+    return supabaseAdmin;
+  }
+  if (token && ENV.SUPABASE_URL && ENV.SUPABASE_ANON_KEY) {
+    return createClient(ENV.SUPABASE_URL, ENV.SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+  }
+  return supabaseAdmin || supabase;
+}
+
 export { supabase, supabaseAdmin };

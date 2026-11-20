@@ -1,4 +1,4 @@
-import { supabase } from '../config/supabase.js';
+import { supabase, supabaseAdmin, getDbClient } from '../config/supabase.js';
 
 export interface Profile {
   id: string;
@@ -62,7 +62,7 @@ export interface WalletTransaction {
   created_at: string;
 }
 
-// In-Memory Seed Data Fallback Store
+// In-Memory Fallback & Cache Store
 class DataStore {
   private profiles: Map<string, Profile> = new Map();
   private astrologers: Map<string, Astrologer> = new Map();
@@ -70,84 +70,30 @@ class DataStore {
   private messages: ChatMessage[] = [];
   private transactions: WalletTransaction[] = [];
 
-  constructor() {
-    this.initSeeds();
-  }
-
-  private initSeeds() {
-    const seedAstrologers: Astrologer[] = [
-      {
-        id: 'b0000000-0000-0000-0000-000000000001',
-        display_name: 'Acharya Rini Pandit',
-        specialties: ['Vedic', 'Kundli', 'Vastu', 'Career Guidance'],
-        languages: ['Hindi', 'English'],
-        experience_years: 25,
-        rate_per_minute: 35.0,
-        rating: 4.9,
-        total_reviews: 14820,
-        is_online: true,
-        is_busy: false,
-        bio: 'Gold Medalist Astro-Scientist with 25+ years of experience in Vedic Astrology, Career, and Marital remedies.',
-        avatar_url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80',
-      },
-      {
-        id: 'b0000000-0000-0000-0000-000000000002',
-        display_name: 'Pt. Radhe Shyam',
-        specialties: ['Vedic', 'Kundli Matching', 'Prashna Chart'],
-        languages: ['Hindi'],
-        experience_years: 16,
-        rate_per_minute: 25.0,
-        rating: 4.8,
-        total_reviews: 8920,
-        is_online: true,
-        is_busy: false,
-        bio: 'Specialist in Kundli Milan (36 Guna), Manglik Dosh analysis, and gemstone recommendations.',
-        avatar_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
-      },
-      {
-        id: 'b0000000-0000-0000-0000-000000000003',
-        display_name: 'Tarot Priya',
-        specialties: ['Tarot Reading', 'Psychic Reading', 'Relationship Guidance'],
-        languages: ['English', 'Hindi'],
-        experience_years: 8,
-        rate_per_minute: 20.0,
-        rating: 4.9,
-        total_reviews: 5410,
-        is_online: true,
-        is_busy: false,
-        bio: 'Intuitive Tarot reader and crystal consultant guiding relationship healing and spiritual pathfinding.',
-        avatar_url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&q=80',
-      },
-      {
-        id: 'b0000000-0000-0000-0000-000000000004',
-        display_name: 'Dr. Vivek Shastri',
-        specialties: ['Numerology', 'Vastu Consultation', 'Business Astrologer'],
-        languages: ['Hindi', 'English', 'Gujarati'],
-        experience_years: 19,
-        rate_per_minute: 40.0,
-        rating: 4.7,
-        total_reviews: 7340,
-        is_online: true,
-        is_busy: false,
-        bio: 'PhD in Astro-Numerology. Trusted advisor to businesses, startups, and corporate leaders across India.',
-        avatar_url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80',
-      },
-    ];
-
-    seedAstrologers.forEach((astro) => this.astrologers.set(astro.id, astro));
-  }
+  constructor() {}
 
   // Profile operations
   async getProfile(idOrPhone: string): Promise<Profile | null> {
-    if (supabase) {
+    const db = getDbClient();
+    if (db) {
       try {
-        const { data } = await supabase
+        const { data, error } = await db
           .from('profiles')
           .select('*')
           .or(`id.eq.${idOrPhone},phone.eq.${idOrPhone}`)
           .maybeSingle();
-        if (data) return data as Profile;
-      } catch (_) {}
+        if (error) {
+          console.error('[Supabase Error] getProfile:', error.message);
+        }
+        if (data) {
+          const prof = data as Profile;
+          this.profiles.set(prof.id, prof);
+          if (prof.phone) this.profiles.set(prof.phone, prof);
+          return prof;
+        }
+      } catch (ex: any) {
+        console.error('[Supabase Exception] getProfile:', ex?.message || ex);
+      }
     }
     return (
       this.profiles.get(idOrPhone) ||
@@ -165,39 +111,76 @@ class DataStore {
     if (updated.phone) {
       this.profiles.set(updated.phone, updated);
     }
-    if (supabase) {
+    const db = getDbClient();
+    if (db) {
       try {
-        await supabase.from('profiles').upsert(updated);
-      } catch (_) {}
+        const profileRow = {
+          id: updated.id,
+          phone: updated.phone || `+91${Date.now().toString().slice(-10)}`,
+          full_name: updated.full_name || '',
+          gender: updated.gender || 'male',
+          dob: updated.dob || null,
+          tob: updated.tob || null,
+          pob_city: updated.pob_city || '',
+          pob_country: updated.pob_country || 'India',
+          wallet_balance: updated.wallet_balance !== undefined ? updated.wallet_balance : 0.0,
+          avatar_url: updated.avatar_url || '',
+        };
+        const { error } = await db.from('profiles').upsert(profileRow, { onConflict: 'id' });
+        if (error) {
+          console.error('[Supabase Error] updateProfile upsert:', error.message);
+        }
+      } catch (ex: any) {
+        console.error('[Supabase Exception] updateProfile:', ex?.message || ex);
+      }
     }
     return updated;
   }
 
   // Astrologer operations
   async listAstrologers(specialty?: string): Promise<Astrologer[]> {
-    if (supabase) {
+    const db = getDbClient();
+    if (db) {
       try {
-        let query = supabase.from('astrologers').select('*');
+        let query = db.from('astrologers').select('*');
         if (specialty) {
           query = query.contains('specialties', [specialty]);
         }
-        const { data } = await query;
-        if (data && data.length > 0) return data as Astrologer[];
-      } catch (_) {}
+        const { data, error } = await query;
+        if (error) {
+          console.error('[Supabase Error] listAstrologers:', error.message);
+        }
+        if (data && data.length > 0) {
+          data.forEach((a: any) => this.astrologers.set(a.id, a as Astrologer));
+          return data as Astrologer[];
+        }
+      } catch (ex: any) {
+        console.error('[Supabase Exception] listAstrologers:', ex?.message || ex);
+      }
     }
     const all = Array.from(this.astrologers.values());
     if (!specialty) return all;
     return all.filter((a) =>
-      a.specialties.some((s) => s.toLowerCase().includes(specialty.toLowerCase()))
+      a.specialties?.some((s) => s.toLowerCase().includes(specialty.toLowerCase()))
     );
   }
 
   async getAstrologer(id: string): Promise<Astrologer | null> {
-    if (supabase) {
+    const db = getDbClient();
+    if (db) {
       try {
-        const { data } = await supabase.from('astrologers').select('*').eq('id', id).maybeSingle();
-        if (data) return data as Astrologer;
-      } catch (_) {}
+        const { data, error } = await db.from('astrologers').select('*').eq('id', id).maybeSingle();
+        if (error) {
+          console.error('[Supabase Error] getAstrologer:', error.message);
+        }
+        if (data) {
+          const astro = data as Astrologer;
+          this.astrologers.set(id, astro);
+          return astro;
+        }
+      } catch (ex: any) {
+        console.error('[Supabase Exception] getAstrologer:', ex?.message || ex);
+      }
     }
     return this.astrologers.get(id) || null;
   }
@@ -207,74 +190,112 @@ class DataStore {
     if (astro) {
       astro.is_busy = isBusy;
       this.astrologers.set(id, astro);
-      if (supabase) {
-        await supabase.from('astrologers').update({ is_busy: isBusy }).eq('id', id);
+      const db = getDbClient();
+      if (db) {
+        try {
+          await db.from('astrologers').update({ is_busy: isBusy }).eq('id', id);
+        } catch (_) {}
       }
     }
   }
 
   async updateAstrologer(id: string, updates: Partial<Astrologer>): Promise<Astrologer | null> {
-    const astro = await this.getAstrologer(id);
-    if (!astro) {
-      let profile = await this.getProfile(id);
-      const newAstro: Astrologer = {
-        id,
-        display_name: updates.display_name || profile?.full_name || 'Acharya',
-        specialties: updates.specialties || ['Vedic', 'Kundli'],
-        languages: updates.languages || ['Hindi', 'English'],
-        experience_years: updates.experience_years || 5,
-        rate_per_minute: updates.rate_per_minute || 25.0,
-        rating: 5.0,
-        total_reviews: 0,
-        is_online: updates.is_online !== undefined ? updates.is_online : true,
-        is_busy: false,
-        bio: updates.bio || '',
-        avatar_url: updates.avatar_url || profile?.avatar_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
-        ...updates,
-      };
-      this.astrologers.set(id, newAstro);
-      if (supabase) {
-        try {
-          if (!profile) {
-            await supabase.from('profiles').upsert({
-              id,
-              phone: `+91${Date.now().toString().slice(-10)}`,
-              full_name: newAstro.display_name,
-              wallet_balance: 0.0,
-            });
-          }
-          await supabase.from('astrologers').upsert({
-            ...newAstro,
-            profile_id: id,
-          });
-        } catch (_) {}
-      }
-      return newAstro;
-    }
-    const updated = { ...astro, ...updates };
-    this.astrologers.set(id, updated);
-    if (supabase) {
+    const currentAstro = await this.getAstrologer(id);
+    const profile = await this.getProfile(id);
+
+    const cleanAstro: Astrologer = {
+      id,
+      display_name: updates.display_name || currentAstro?.display_name || profile?.full_name || 'Acharya',
+      specialties: updates.specialties || currentAstro?.specialties || ['Vedic', 'Kundli'],
+      languages: updates.languages || currentAstro?.languages || ['Hindi', 'English'],
+      experience_years: updates.experience_years !== undefined ? Number(updates.experience_years) : (currentAstro?.experience_years ?? 5),
+      rate_per_minute: updates.rate_per_minute !== undefined ? Number(updates.rate_per_minute) : (currentAstro?.rate_per_minute ?? 25.0),
+      rating: currentAstro?.rating ?? 5.0,
+      total_reviews: currentAstro?.total_reviews ?? 0,
+      is_online: updates.is_online !== undefined ? updates.is_online : (currentAstro?.is_online ?? true),
+      is_busy: updates.is_busy !== undefined ? updates.is_busy : (currentAstro?.is_busy ?? false),
+      bio: updates.bio !== undefined ? updates.bio : (currentAstro?.bio ?? ''),
+      avatar_url: updates.avatar_url || currentAstro?.avatar_url || profile?.avatar_url || '',
+    };
+
+    this.astrologers.set(id, cleanAstro);
+
+    const db = getDbClient();
+    if (db) {
       try {
-        const { error: err } = await supabase.from('astrologers').update(updates).eq('id', id);
-        if (err) {
-          await supabase.from('astrologers').upsert({
-            ...updated,
-            profile_id: id,
-          });
+        // 1. Ensure profile exists in profiles table so foreign key constraint succeeds
+        const profilePhone = profile?.phone || `+91${Date.now().toString().slice(-10)}`;
+        const { error: profileErr } = await db.from('profiles').upsert({
+          id,
+          phone: profilePhone,
+          full_name: cleanAstro.display_name,
+          wallet_balance: 0.0,
+        }, { onConflict: 'id' });
+        if (profileErr) {
+          console.error('[Supabase Error] Upsert profiles before astrologer:', profileErr.message);
         }
-      } catch (_) {}
+
+        // 2. Prepare database row strictly conforming to public.astrologers schema
+        const astroDbRow: any = {
+          id,
+          profile_id: !profileErr ? id : null,
+          display_name: cleanAstro.display_name,
+          specialties: cleanAstro.specialties,
+          languages: cleanAstro.languages,
+          experience_years: cleanAstro.experience_years,
+          rate_per_minute: cleanAstro.rate_per_minute,
+          rating: cleanAstro.rating,
+          total_reviews: cleanAstro.total_reviews,
+          is_online: cleanAstro.is_online,
+          is_busy: cleanAstro.is_busy,
+          bio: cleanAstro.bio,
+          avatar_url: cleanAstro.avatar_url,
+        };
+
+        // 3. Upsert into astrologers table
+        const { data: upsertData, error: astroErr } = await db
+          .from('astrologers')
+          .upsert(astroDbRow, { onConflict: 'id' })
+          .select();
+
+        if (astroErr) {
+          console.error('[Supabase Error] Upsert astrologers failed:', astroErr.message, 'Code:', astroErr.code);
+          // If foreign key constraint failed (e.g. code 23503), retry without profile_id
+          if (astroErr.code === '23503') {
+            delete astroDbRow.profile_id;
+            const { data: retryData, error: retryErr } = await db
+              .from('astrologers')
+              .upsert(astroDbRow, { onConflict: 'id' })
+              .select();
+            if (retryErr) {
+              console.error('[Supabase Error] Retry astrologer upsert without profile_id also failed:', retryErr.message);
+            } else {
+              console.log('[Supabase Success] Astrologer inserted into Supabase (without profile_id):', id);
+            }
+          }
+        } else {
+          console.log('[Supabase Success] Astrologer successfully inserted into Supabase astrologers table:', id);
+        }
+      } catch (ex: any) {
+        console.error('[Supabase Exception] Failed to persist astrologer to Supabase:', ex?.message || ex);
+      }
     }
-    return updated;
+
+    return cleanAstro;
   }
 
   async getConsultationsByAstrologer(astrologerId: string): Promise<Consultation[]> {
-    if (supabase) {
-      const { data } = await supabase
-        .from('consultations')
-        .select('*')
-        .eq('astrologer_id', astrologerId)
-        .order('created_at', { ascending: false });
-      if (data) return data as Consultation[];
+    const db = getDbClient();
+    if (db) {
+      try {
+        const { data, error } = await db
+          .from('consultations')
+          .select('*')
+          .eq('astrologer_id', astrologerId)
+          .order('created_at', { ascending: false });
+        if (error) console.error('[Supabase Error] getConsultationsByAstrologer:', error.message);
+        if (data) return data as Consultation[];
+      } catch (_) {}
     }
     return Array.from(this.consultations.values())
       .filter((c) => c.astrologer_id === astrologerId)
@@ -296,18 +317,21 @@ class DataStore {
 
   // Wallet operations
   async rechargeWallet(userId: string, amount: number): Promise<{ profile: Profile; tx: WalletTransaction }> {
-    const profile = (await this.getProfile(userId)) || {
-      id: userId,
-      phone: '+919876543210',
-      full_name: 'Rahul Sharma',
-      gender: 'male',
-      dob: '1995-08-15',
-      tob: '07:30',
-      pob_city: 'New Delhi',
-      pob_country: 'India',
-      wallet_balance: 0,
-      avatar_url: '',
-    };
+    let profile = await this.getProfile(userId);
+    if (!profile) {
+      profile = {
+        id: userId,
+        phone: '',
+        full_name: '',
+        gender: 'male',
+        dob: '',
+        tob: '',
+        pob_city: '',
+        pob_country: 'India',
+        wallet_balance: 0,
+        avatar_url: '',
+      };
+    }
 
     profile.wallet_balance = Number(profile.wallet_balance) + Number(amount);
     await this.updateProfile(userId, { wallet_balance: profile.wallet_balance });
@@ -317,13 +341,17 @@ class DataStore {
       user_id: userId,
       amount,
       type: 'recharge',
-      description: `Wallet top-up (Demo Instant Recharge)`,
+      description: `Wallet recharge`,
       balance_after: profile.wallet_balance,
       created_at: new Date().toISOString(),
     };
     this.transactions.unshift(tx);
-    if (supabase) {
-      await supabase.from('wallet_transactions').insert(tx);
+    const db = getDbClient();
+    if (db) {
+      try {
+        const { error } = await db.from('wallet_transactions').insert(tx);
+        if (error) console.error('[Supabase Error] rechargeWallet tx insert:', error.message);
+      } catch (_) {}
     }
     return { profile, tx };
   }
@@ -352,21 +380,29 @@ class DataStore {
       created_at: new Date().toISOString(),
     };
     this.transactions.unshift(tx);
-    if (supabase) {
-      await supabase.from('wallet_transactions').insert(tx);
+    const db = getDbClient();
+    if (db) {
+      try {
+        const { error } = await db.from('wallet_transactions').insert(tx);
+        if (error) console.error('[Supabase Error] deductConsultationMinute tx insert:', error.message);
+      } catch (_) {}
     }
 
     return { success: true, newBalance: profile.wallet_balance };
   }
 
   async getTransactions(userId: string): Promise<WalletTransaction[]> {
-    if (supabase) {
-      const { data } = await supabase
-        .from('wallet_transactions')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-      if (data) return data as WalletTransaction[];
+    const db = getDbClient();
+    if (db) {
+      try {
+        const { data, error } = await db
+          .from('wallet_transactions')
+          .select('*')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false });
+        if (error) console.error('[Supabase Error] getTransactions:', error.message);
+        if (data) return data as WalletTransaction[];
+      } catch (_) {}
     }
     return this.transactions.filter((t) => t.user_id === userId);
   }
@@ -379,16 +415,24 @@ class DataStore {
       created_at: new Date().toISOString(),
     };
     this.consultations.set(session.id, session);
-    if (supabase) {
-      await supabase.from('consultations').insert(session);
+    const db = getDbClient();
+    if (db) {
+      try {
+        const { error } = await db.from('consultations').insert(session);
+        if (error) console.error('[Supabase Error] createConsultation:', error.message);
+      } catch (_) {}
     }
     return session;
   }
 
   async getConsultation(id: string): Promise<Consultation | null> {
-    if (supabase) {
-      const { data } = await supabase.from('consultations').select('*').eq('id', id).single();
-      if (data) return data as Consultation;
+    const db = getDbClient();
+    if (db) {
+      try {
+        const { data, error } = await db.from('consultations').select('*').eq('id', id).single();
+        if (error) console.error('[Supabase Error] getConsultation:', error.message);
+        if (data) return data as Consultation;
+      } catch (_) {}
     }
     return this.consultations.get(id) || null;
   }
@@ -398,20 +442,28 @@ class DataStore {
     if (!session) return null;
     const updated = { ...session, ...updates };
     this.consultations.set(id, updated);
-    if (supabase) {
-      await supabase.from('consultations').update(updates).eq('id', id);
+    const db = getDbClient();
+    if (db) {
+      try {
+        const { error } = await db.from('consultations').update(updates).eq('id', id);
+        if (error) console.error('[Supabase Error] updateConsultation:', error.message);
+      } catch (_) {}
     }
     return updated;
   }
 
   async getConsultationsByUser(userId: string): Promise<Consultation[]> {
-    if (supabase) {
-      const { data } = await supabase
-        .from('consultations')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-      if (data) return data as Consultation[];
+    const db = getDbClient();
+    if (db) {
+      try {
+        const { data, error } = await db
+          .from('consultations')
+          .select('*')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false });
+        if (error) console.error('[Supabase Error] getConsultationsByUser:', error.message);
+        if (data) return data as Consultation[];
+      } catch (_) {}
     }
     return Array.from(this.consultations.values())
       .filter((c) => c.user_id === userId)
@@ -426,20 +478,28 @@ class DataStore {
       created_at: new Date().toISOString(),
     };
     this.messages.push(fullMsg);
-    if (supabase) {
-      await supabase.from('chat_messages').insert(fullMsg);
+    const db = getDbClient();
+    if (db) {
+      try {
+        const { error } = await db.from('chat_messages').insert(fullMsg);
+        if (error) console.error('[Supabase Error] addMessage:', error.message);
+      } catch (_) {}
     }
     return fullMsg;
   }
 
   async getMessages(consultationId: string): Promise<ChatMessage[]> {
-    if (supabase) {
-      const { data } = await supabase
-        .from('chat_messages')
-        .select('*')
-        .eq('consultation_id', consultationId)
-        .order('created_at', { ascending: true });
-      if (data) return data as ChatMessage[];
+    const db = getDbClient();
+    if (db) {
+      try {
+        const { data, error } = await db
+          .from('chat_messages')
+          .select('*')
+          .eq('consultation_id', consultationId)
+          .order('created_at', { ascending: true });
+        if (error) console.error('[Supabase Error] getMessages:', error.message);
+        if (data) return data as ChatMessage[];
+      } catch (_) {}
     }
     return this.messages.filter((m) => m.consultation_id === consultationId);
   }

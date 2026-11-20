@@ -67,7 +67,11 @@ export function setupConsultationSockets(wss: WebSocketServer) {
 
     // Extract query params e.g. ws://localhost:5001/ws/consultation?userId=...
     const url = new URL(req.url || '', `http://${req.headers.host}`);
-    const userId = url.searchParams.get('userId') || 'a0000000-0000-0000-0000-000000000001';
+    const userId = url.searchParams.get('userId');
+    if (!userId) {
+      ws.close(1008, 'User ID required');
+      return;
+    }
     ws.userId = userId;
     userSocketMap.set(userId, ws);
 

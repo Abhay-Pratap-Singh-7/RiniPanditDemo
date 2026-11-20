@@ -332,14 +332,18 @@ class AppState extends ChangeNotifier {
 
     try {
       if (role == 'pandit') {
-        final pid = panditId ?? _currentPandit?.id ?? 'b0000000-0000-0000-0000-000000000001';
-        _currentPandit = await _api.panditLogin(id: pid);
-        _socket.connect(pid);
-        await loadPanditData(pid);
+        final pid = panditId ?? _currentPandit?.id ?? _currentUser?['id'] ?? _userProfile?.id;
+        if (pid != null) {
+          _currentPandit = await _api.panditLogin(id: pid);
+          _socket.connect(pid);
+          await loadPanditData(pid);
+        }
       } else {
-        final uid = _userProfile?.id ?? ApiConstants.defaultUserId;
-        _socket.connect(uid);
-        await loadProfile();
+        final uid = _userProfile?.id ?? _currentUser?['id'] ?? '';
+        if (uid.isNotEmpty) {
+          _socket.connect(uid);
+          await loadProfile();
+        }
       }
     } catch (e) {
       _errorMessage = ApiService.extractErrorMessage(e);

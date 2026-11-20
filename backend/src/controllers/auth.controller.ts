@@ -9,8 +9,8 @@ export async function signUp(req: Request, res: Response) {
     const {
       email,
       password,
-      fullName = 'Devotee / Client',
-      phone = '+919876543210',
+      fullName = '',
+      phone = '',
       role = 'user',
       specialties = ['Vedic', 'Kundli'],
       languages = ['Hindi', 'English'],
@@ -140,13 +140,13 @@ export async function signUp(req: Request, res: Response) {
       id: authUserId,
       phone,
       full_name: fullName,
-      gender: 'male',
-      dob: '1995-01-01',
-      tob: '10:00',
-      pob_city: 'Delhi',
-      pob_country: 'India',
+      gender: req.body.gender || 'male',
+      dob: req.body.dob || '',
+      tob: req.body.tob || '',
+      pob_city: req.body.pobCity || '',
+      pob_country: req.body.pobCountry || 'India',
       wallet_balance: initialWalletBalance,
-      avatar_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80',
+      avatar_url: '',
     };
 
     const savedProfile = await store.updateProfile(authUserId, newProfile);
@@ -156,7 +156,7 @@ export async function signUp(req: Request, res: Response) {
     if (role === 'pandit') {
       const newAstrologer: Astrologer = {
         id: authUserId,
-        display_name: fullName,
+        display_name: fullName || 'Acharya',
         specialties: Array.isArray(specialties) ? specialties : ['Vedic', 'Kundli'],
         languages: Array.isArray(languages) ? languages : ['Hindi', 'English'],
         experience_years: Number(experienceYears) || 5,
@@ -165,16 +165,10 @@ export async function signUp(req: Request, res: Response) {
         total_reviews: 0,
         is_online: true,
         is_busy: false,
-        bio: bio || 'Certified Vedic Astrologer & Kundli Specialist',
-        avatar_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
+        bio: bio || '',
+        avatar_url: '',
       };
 
-      if (supabase) {
-        await supabase.from('astrologers').upsert({
-          ...newAstrologer,
-          profile_id: authUserId,
-        });
-      }
       savedAstrologer = await store.updateAstrologer(authUserId, newAstrologer);
     }
 

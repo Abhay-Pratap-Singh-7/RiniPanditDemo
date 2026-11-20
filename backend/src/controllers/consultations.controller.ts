@@ -3,7 +3,10 @@ import { store } from '../services/store.js';
 
 export async function getConsultationHistory(req: Request, res: Response) {
   try {
-    const userId = (req.query.userId as string) || 'a0000000-0000-0000-0000-000000000001';
+    const userId = (req.query.userId as string) || (req as any).user?.id;
+    if (!userId) {
+      return res.status(400).json({ success: false, message: 'User ID is required' });
+    }
     const history = await store.getConsultationsByUser(userId);
     res.json({ success: true, data: history });
   } catch (err: any) {

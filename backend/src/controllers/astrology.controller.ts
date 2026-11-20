@@ -26,7 +26,10 @@ export async function getAllHoroscopes(req: Request, res: Response) {
 
 export async function generateKundli(req: Request, res: Response) {
   try {
-    const { name = 'Rahul Sharma', gender = 'male', dob = '1995-08-15', tob = '07:30', pobCity = 'New Delhi' } = req.body;
+    const { name = '', gender = '', dob = '', tob = '', pobCity = '' } = req.body;
+    if (!dob) {
+      return res.status(400).json({ success: false, message: 'Date of birth (dob) is required' });
+    }
     const kundli = calculateKundli({ name, gender, dob, tob, pobCity });
     res.json({ success: true, data: kundli });
   } catch (err: any) {
