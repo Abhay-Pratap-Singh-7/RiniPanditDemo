@@ -23,18 +23,32 @@ class UserProfile {
     required this.avatarUrl,
   });
 
-  factory UserProfile.fromJson(Map<String, dynamic> json) {
+  factory UserProfile.fromJson(Map<String, dynamic>? json) {
+    if (json == null) {
+      return UserProfile(
+        id: '',
+        phone: '',
+        fullName: 'Devotee',
+        gender: 'male',
+        dob: '',
+        tob: '',
+        pobCity: '',
+        pobCountry: 'India',
+        walletBalance: 0.0,
+        avatarUrl: '',
+      );
+    }
     return UserProfile(
-      id: json['id'] ?? '',
-      phone: json['phone'] ?? '',
-      fullName: json['full_name'] ?? 'Devotee',
-      gender: json['gender'] ?? 'male',
-      dob: json['dob'] ?? '',
-      tob: json['tob'] ?? '',
-      pobCity: json['pob_city'] ?? '',
-      pobCountry: json['pob_country'] ?? 'India',
-      walletBalance: (json['wallet_balance'] as num?)?.toDouble() ?? 0.0,
-      avatarUrl: json['avatar_url'] ?? '',
+      id: json['id']?.toString() ?? '',
+      phone: json['phone']?.toString() ?? '',
+      fullName: json['full_name'] ?? json['fullName'] ?? 'Devotee',
+      gender: json['gender']?.toString() ?? 'male',
+      dob: json['dob']?.toString() ?? '',
+      tob: json['tob']?.toString() ?? '',
+      pobCity: json['pob_city'] ?? json['pobCity'] ?? '',
+      pobCountry: json['pob_country'] ?? json['pobCountry'] ?? 'India',
+      walletBalance: (json['wallet_balance'] ?? json['walletBalance'] as num?)?.toDouble() ?? 0.0,
+      avatarUrl: json['avatar_url']?.toString() ?? json['avatarUrl']?.toString() ?? '',
     );
   }
 

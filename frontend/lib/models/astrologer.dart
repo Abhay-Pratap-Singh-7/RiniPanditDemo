@@ -27,20 +27,40 @@ class Astrologer {
     required this.avatarUrl,
   });
 
-  factory Astrologer.fromJson(Map<String, dynamic> json) {
+  factory Astrologer.fromJson(Map<String, dynamic>? json) {
+    if (json == null) {
+      return Astrologer(
+        id: '',
+        displayName: 'Acharya',
+        specialties: const ['Vedic', 'Kundli'],
+        languages: const ['Hindi', 'English'],
+        experienceYears: 5,
+        ratePerMinute: 25.0,
+        rating: 5.0,
+        totalReviews: 0,
+        isOnline: true,
+        isBusy: false,
+        bio: '',
+        avatarUrl: '',
+      );
+    }
     return Astrologer(
-      id: json['id'] ?? '',
-      displayName: json['display_name'] ?? '',
-      specialties: List<String>.from(json['specialties'] ?? []),
-      languages: List<String>.from(json['languages'] ?? []),
-      experienceYears: json['experience_years'] ?? 1,
-      ratePerMinute: (json['rate_per_minute'] as num?)?.toDouble() ?? 20.0,
+      id: json['id']?.toString() ?? '',
+      displayName: json['display_name'] ?? json['displayName'] ?? 'Acharya',
+      specialties: json['specialties'] is List
+          ? List<String>.from(json['specialties'])
+          : const ['Vedic', 'Kundli'],
+      languages: json['languages'] is List
+          ? List<String>.from(json['languages'])
+          : const ['Hindi', 'English'],
+      experienceYears: json['experience_years'] ?? json['experienceYears'] ?? 5,
+      ratePerMinute: (json['rate_per_minute'] ?? json['ratePerMinute'] as num?)?.toDouble() ?? 25.0,
       rating: (json['rating'] as num?)?.toDouble() ?? 5.0,
-      totalReviews: json['total_reviews'] ?? 0,
-      isOnline: json['is_online'] ?? true,
-      isBusy: json['is_busy'] ?? false,
-      bio: json['bio'] ?? '',
-      avatarUrl: json['avatar_url'] ?? '',
+      totalReviews: json['total_reviews'] ?? json['totalReviews'] ?? 0,
+      isOnline: json['is_online'] ?? json['isOnline'] ?? true,
+      isBusy: json['is_busy'] ?? json['isBusy'] ?? false,
+      bio: json['bio']?.toString() ?? '',
+      avatarUrl: json['avatar_url']?.toString() ?? json['avatarUrl']?.toString() ?? '',
     );
   }
 }
