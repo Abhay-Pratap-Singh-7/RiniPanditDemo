@@ -24,27 +24,79 @@ class FeaturedStoryCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 140,
+        height: 155,
+        width: double.infinity,
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           color: backgroundColor,
           borderRadius: AppTheme.cardRadius,
           boxShadow: [
             BoxShadow(
-              color: backgroundColor.withAlpha(50),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
+              color: backgroundColor.withAlpha(70),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
             ),
           ],
         ),
         clipBehavior: Clip.antiAlias,
         child: Stack(
+          fit: StackFit.expand,
           children: [
-            // Left content (Title & Subtitle)
+            // Full card image asset placed UNDER the text
+            Positioned(
+              right: -10,
+              top: -10,
+              bottom: -10,
+              width: 210,
+              child: Opacity(
+                opacity: 0.92,
+                child: Image.asset(
+                  'assets/cards/$assetName',
+                  fit: BoxFit.contain,
+                  alignment: Alignment.centerRight,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Align(
+                      alignment: Alignment.centerRight,
+                      child: Container(
+                        margin: const EdgeInsets.only(right: 20),
+                        width: 90,
+                        height: 90,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withAlpha(30),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(fallbackIcon, size: 50, color: Colors.white.withAlpha(220)),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+
+            // Horizontal gradient overlay for high text contrast across full width
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                    colors: [
+                      backgroundColor.withAlpha(250),
+                      backgroundColor.withAlpha(220),
+                      backgroundColor.withAlpha(120),
+                      backgroundColor.withAlpha(30),
+                    ],
+                    stops: const [0.0, 0.45, 0.75, 1.0],
+                  ),
+                ),
+              ),
+            ),
+
+            // Text on top across full width
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 20),
               child: SizedBox(
-                width: MediaQuery.of(context).size.width * 0.52,
+                width: MediaQuery.of(context).size.width * 0.65,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -55,9 +107,9 @@ class FeaturedStoryCard extends StatelessWidget {
                           title,
                           style: const TextStyle(
                             color: AppTheme.textWhite,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.3,
+                            fontSize: 19,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -0.4,
                             height: 1.2,
                           ),
                           softWrap: true,
@@ -70,44 +122,16 @@ class FeaturedStoryCard extends StatelessWidget {
                         Text(
                           subtitle,
                           style: const TextStyle(
-                            color: Color(0xCCFFFFFF),
-                            fontSize: 12,
+                            color: Color(0xEEFFFFFF),
+                            fontSize: 13,
                             fontWeight: FontWeight.w400,
-                            height: 1.3,
+                            height: 1.35,
                           ),
                           softWrap: true,
                         ),
                       ],
                     ),
                   ],
-                ),
-              ),
-            ),
-
-            // Right Artwork / Asset with fallback
-            Positioned(
-              right: 12,
-              bottom: 0,
-              top: 0,
-              child: SizedBox(
-                width: 130,
-                child: Image.asset(
-                  'assets/cards/$assetName',
-                  fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Align(
-                      alignment: Alignment.centerRight,
-                      child: Container(
-                        width: 90,
-                        height: 90,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withAlpha(35),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(fallbackIcon, size: 48, color: Colors.white.withAlpha(220)),
-                      ),
-                    );
-                  },
                 ),
               ),
             ),
