@@ -4,6 +4,7 @@ import '../core/theme/app_theme.dart';
 import '../providers/app_state.dart';
 import '../screens/wallet_screen.dart';
 import '../screens/role_selection_screen.dart';
+import '../screens/auth_screen.dart';
 
 class AppHeader extends StatelessWidget implements PreferredSizeWidget {
   final String title;
@@ -65,6 +66,22 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
         ],
       ),
       actions: [
+        // Supabase Auth Account Button
+        IconButton(
+          icon: Icon(
+            appState.isAuthenticated ? Icons.account_circle : Icons.account_circle_outlined,
+            color: appState.isAuthenticated ? AppTheme.accentCyan : AppTheme.cardLilac,
+            size: 22,
+          ),
+          tooltip: appState.isAuthenticated ? 'Account Profile' : 'Sign In with Supabase',
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AuthScreen()),
+            );
+          },
+        ),
+
         // Role Switcher Button
         IconButton(
           icon: const Icon(Icons.swap_horiz, color: AppTheme.cardLilac, size: 22),

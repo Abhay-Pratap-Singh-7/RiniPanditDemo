@@ -1,9 +1,10 @@
 import { Request, Response } from 'express';
 import { store } from '../services/store.js';
+import { AuthRequest } from '../middleware/auth.middleware.js';
 
-export async function getUserProfile(req: Request, res: Response) {
+export async function getUserProfile(req: AuthRequest, res: Response) {
   try {
-    const userId = (req.query.userId as string) || 'a0000000-0000-0000-0000-000000000001';
+    const userId = req.user?.id || (req.query.userId as string) || 'a0000000-0000-0000-0000-000000000001';
     const profile = await store.getProfile(userId);
     if (!profile) {
       return res.status(404).json({ success: false, message: 'Profile not found' });
@@ -14,9 +15,9 @@ export async function getUserProfile(req: Request, res: Response) {
   }
 }
 
-export async function updateUserProfile(req: Request, res: Response) {
+export async function updateUserProfile(req: AuthRequest, res: Response) {
   try {
-    const userId = (req.body.userId as string) || 'a0000000-0000-0000-0000-000000000001';
+    const userId = req.user?.id || (req.body.userId as string) || 'a0000000-0000-0000-0000-000000000001';
     const updated = await store.updateProfile(userId, req.body);
     res.json({ success: true, data: updated });
   } catch (err: any) {

@@ -18,6 +18,15 @@ class AppState extends ChangeNotifier {
   ApiService get api => _api;
   SocketService get socket => _socket;
 
+  // Supabase Auth State
+  String? _authToken;
+  bool _isAuthenticated = false;
+  Map<String, dynamic>? _currentUser;
+
+  bool get isAuthenticated => _isAuthenticated;
+  String? get authToken => _authToken;
+  Map<String, dynamic>? get currentUser => _currentUser;
+
   // Active Role ('user' | 'pandit')
   String _currentRole = 'user';
   String get currentRole => _currentRole;
@@ -179,6 +188,139 @@ class AppState extends ChangeNotifier {
     });
   }
 
+  // ==========================================
+  // SUPABASE AUTHENTICATION METHODS
+  // ==========================================
+  Future<bool> signUpWithSupabase({
+    required String email,
+    required String password,
+    String? fullName,
+    String? phone,
+    String role = 'user',
+    List<String>? specialties,
+    double? ratePerMinute,
+    int? experienceYears,
+    String? bio,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final res = await _api.signUpWithSupabase(
+        email: email,
+        password: password,
+        fullName: fullName,
+        phone: phone,
+        role: role,
+        specialties: specialties,
+        ratePerMinute: ratePerMinute,
+        experienceYears: experienceYears,
+        bio: bio,
+      );
+
+      if (res['success'] == true) {
+        _authToken = res['token'] as String?;
+        _isAuthenticated = true;
+        _currentUser = res['user'] as Map<String, dynamic>?;
+        _currentRole = role;
+
+        if (res['profile'] != null) {
+          _userProfile = UserProfile.fromJson(res['profile']);
+        }
+        if (res['astrologer'] != null) {
+          _currentPandit = Astrologer.fromJson(res['astrologer']);
+        }
+
+        // Reconnect socket with authenticated user ID
+        final uid = _userProfile?.id ?? _currentUser?['id'] ?? ApiConstants.defaultUserId;
+        _socket.connect(uid.toString());
+
+        await loadProfile();
+        return true;
+      } else {
+        _errorMessage = res['message'] ?? 'Sign up failed';
+        return false;
+      }
+    } catch (e) {
+      _errorMessage = e.toString();
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> signInWithSupabase({
+    required String email,
+    required String password,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final res = await _api.signInWithSupabase(
+        email: email,
+        password: password,
+      );
+
+      if (res['success'] == true) {
+        _authToken = res['token'] as String?;
+        _isAuthenticated = true;
+        _currentUser = res['user'] as Map<String, dynamic>?;
+        _currentRole = (res['role'] as String?) ?? 'user';
+
+        if (res['profile'] != null) {
+          _userProfile = UserProfile.fromJson(res['profile']);
+        }
+        if (res['astrologer'] != null) {
+          _currentPandit = Astrologer.fromJson(res['astrologer']);
+        }
+
+        // Reconnect socket with authenticated user ID
+        final uid = _userProfile?.id ?? _currentUser?['id'] ?? ApiConstants.defaultUserId;
+        _socket.connect(uid.toString());
+
+        await loadProfile();
+        if (isPandit) {
+          await loadPanditData(_currentPandit?.id);
+        }
+        return true;
+      } else {
+        _errorMessage = res['message'] ?? 'Invalid credentials';
+        return false;
+      }
+    } catch (e) {
+      _errorMessage = e.toString();
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> logout() async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      await _api.signOut();
+      _authToken = null;
+      _isAuthenticated = false;
+      _currentUser = null;
+      _currentRole = 'user';
+      _userProfile = null;
+      _currentPandit = null;
+      _socket.connect(ApiConstants.defaultUserId);
+    } catch (e) {
+      _errorMessage = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   // Role Management
   Future<void> switchRole(String role, {String? panditId}) async {
     _currentRole = role;
@@ -192,7 +334,8 @@ class AppState extends ChangeNotifier {
         _socket.connect(pid);
         await loadPanditData(pid);
       } else {
-        _socket.connect(ApiConstants.defaultUserId);
+        final uid = _userProfile?.id ?? ApiConstants.defaultUserId;
+        _socket.connect(uid);
         await loadProfile();
       }
     } catch (e) {
@@ -211,9 +354,7 @@ class AppState extends ChangeNotifier {
       _panditEarnings = await _api.getPanditEarnings(panditId);
       _panditSessions = await _api.getPanditSessions(panditId);
       notifyListeners();
-    } catch (e) {
-      // fallback
-    }
+    } catch (_) {}
   }
 
   Future<void> togglePanditOnline(bool isOnline) async {
@@ -263,9 +404,7 @@ class AppState extends ChangeNotifier {
     try {
       _userProfile = await _api.getUserProfile();
       notifyListeners();
-    } catch (e) {
-      // fallback
-    }
+    } catch (_) {}
   }
 
   Future<void> updateProfile(Map<String, dynamic> data) async {
@@ -285,9 +424,7 @@ class AppState extends ChangeNotifier {
     try {
       _astrologers = await _api.getAstrologers(specialty: specialty);
       notifyListeners();
-    } catch (e) {
-      // fallback
-    }
+    } catch (_) {}
   }
 
   Future<void> rechargeWallet(double amount) async {
@@ -322,46 +459,31 @@ class AppState extends ChangeNotifier {
     try {
       _transactions = await _api.getTransactions();
       notifyListeners();
-    } catch (e) {
-      // fallback
-    }
+    } catch (_) {}
   }
 
   Future<void> loadAllHoroscopes() async {
     try {
       _horoscopes = await _api.getAllHoroscopes();
-      if (_horoscopes.containsKey('aries')) {
-        _currentHoroscope = _horoscopes['aries'];
+      if (_horoscopes.isNotEmpty && _currentHoroscope == null) {
+        _currentHoroscope = _horoscopes.values.first;
       }
       notifyListeners();
-    } catch (e) {
-      // fallback
-    }
+    } catch (_) {}
   }
 
   Future<void> loadHoroscope(String sign) async {
-    final key = sign.toLowerCase();
-    if (_horoscopes.containsKey(key)) {
-      _currentHoroscope = _horoscopes[key];
-      notifyListeners();
-      return;
-    }
     try {
       _currentHoroscope = await _api.getHoroscope(sign);
-      if (_currentHoroscope != null) {
-        _horoscopes[key] = _currentHoroscope!;
-      }
       notifyListeners();
-    } catch (e) {
-      // fallback
-    }
+    } catch (_) {}
   }
 
-  Future<void> generateKundli(Map<String, dynamic> input) async {
+  Future<void> generateKundli(Map<String, dynamic> birthDetails) async {
     _isLoading = true;
     notifyListeners();
     try {
-      _currentKundli = await _api.generateKundli(input);
+      _currentKundli = await _api.generateKundli(birthDetails);
     } catch (e) {
       _errorMessage = e.toString();
     } finally {
@@ -370,25 +492,34 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  // Consultation Actions
   void startConsultation(String astrologerId) {
     _socket.initiateConsultation(astrologerId);
+  }
+
+  void endConsultation() {
+    endActiveConsultation();
+  }
+
+  void endActiveConsultation() {
+    if (_activeSession != null) {
+      _socket.endConsultation(_activeSession!.id);
+      _localSecondsTimer?.cancel();
+      _activeSession = null;
+      _activeAstrologer = null;
+      _activeConsultationUser = null;
+      notifyListeners();
+    }
+  }
+
+  void sendMessage(String content) {
+    sendChatMessage(content);
   }
 
   void sendChatMessage(String content) {
     if (_activeSession != null && content.trim().isNotEmpty) {
       _socket.sendMessage(_activeSession!.id, content.trim());
     }
-  }
-
-  void endActiveConsultation() {
-    if (_activeSession != null) {
-      _socket.endConsultation(_activeSession!.id);
-    }
-  }
-
-  void clearError() {
-    _errorMessage = null;
-    notifyListeners();
   }
 
   @override

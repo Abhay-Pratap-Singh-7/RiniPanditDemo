@@ -5,6 +5,7 @@ import '../providers/app_state.dart';
 import '../widgets/cosmic_scaffold.dart';
 import 'home_screen.dart';
 import 'pandit/pandit_dashboard_screen.dart';
+import 'auth_screen.dart';
 
 class RoleSelectionScreen extends StatelessWidget {
   const RoleSelectionScreen({super.key});
@@ -106,6 +107,33 @@ class RoleSelectionScreen extends StatelessWidget {
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(builder: (_) => const PanditDashboardScreen()),
+                  );
+                },
+              ),
+              const SizedBox(height: 20),
+
+              // Supabase Sign In / Register Button
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: AppTheme.cardLilac, width: 1.2),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                ),
+                icon: const Icon(Icons.lock_person_outlined, color: AppTheme.cardLilac, size: 20),
+                label: const Text(
+                  'Sign In / Register with Supabase',
+                  style: TextStyle(
+                    color: AppTheme.textWhite,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                  ),
+                ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const AuthScreen()),
                   );
                 },
               ),

@@ -1,4 +1,6 @@
 import { Router } from 'express';
+import { authenticate } from '../middleware/auth.middleware.js';
+import { signUp, signIn, getMe, signOut, refreshToken } from '../controllers/auth.controller.js';
 import { getAstrologers, getAstrologerById } from '../controllers/astrologers.controller.js';
 import { getUserProfile, updateUserProfile, mockLogin } from '../controllers/user.controller.js';
 import { getWalletBalance, rechargeWallet, getTransactions } from '../controllers/wallet.controller.js';
@@ -14,32 +16,58 @@ import {
 
 const router = Router();
 
-// Auth & User Routes
-router.post('/auth/login', mockLogin);
+// Apply global bearer token extractor middleware across all routes
+router.use(authenticate);
+
+// ==========================================
+// SUPABASE AUTHENTICATION APIS
+// ==========================================
+router.post('/auth/signup', signUp);
+router.post('/auth/login', signIn);
+router.get('/auth/me', getMe);
+router.post('/auth/logout', signOut);
+router.post('/auth/refresh', refreshToken);
+
+// Legacy / Demo quick login endpoints
+router.post('/auth/quick-login', mockLogin);
 router.post('/auth/pandit-login', panditLogin);
+
+// ==========================================
+// USER PROFILE APIS
+// ==========================================
 router.get('/user/profile', getUserProfile);
 router.put('/user/profile', updateUserProfile);
 
-// Pandit / Astrologer Dashboard & Management
+// ==========================================
+// PANDIT / ASTROLOGER MANAGEMENT APIS
+// ==========================================
 router.get('/pandit/profile', getPanditProfile);
 router.put('/pandit/status', updatePanditStatus);
 router.get('/pandit/earnings/:id', getPanditEarnings);
 router.get('/pandit/sessions/:id', getPanditSessions);
 
-// Astrologers Marketplace
+// ==========================================
+// ASTROLOGERS MARKETPLACE APIS
+// ==========================================
 router.get('/astrologers', getAstrologers);
 router.get('/astrologers/:id', getAstrologerById);
 
-// Wallet Ledger & Recharge
+// ==========================================
+// WALLET & LEDGER APIS
+// ==========================================
 router.get('/wallet/balance', getWalletBalance);
 router.post('/wallet/recharge', rechargeWallet);
 router.get('/wallet/transactions', getTransactions);
 
-// Consultations & Chat Logs
+// ==========================================
+// CONSULTATIONS & CHAT HISTORY
+// ==========================================
 router.get('/consultations/history', getConsultationHistory);
 router.get('/consultations/:id/messages', getConsultationMessages);
 
-// Astrology Tools
+// ==========================================
+// ASTROLOGY TOOLS
+// ==========================================
 router.get('/astrology/horoscopes', getAllHoroscopes);
 router.get('/astrology/horoscope', getHoroscope);
 router.post('/astrology/kundli', generateKundli);

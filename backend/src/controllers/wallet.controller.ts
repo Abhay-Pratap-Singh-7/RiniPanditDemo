@@ -1,9 +1,10 @@
 import { Request, Response } from 'express';
 import { store } from '../services/store.js';
+import { AuthRequest } from '../middleware/auth.middleware.js';
 
-export async function getWalletBalance(req: Request, res: Response) {
+export async function getWalletBalance(req: AuthRequest, res: Response) {
   try {
-    const userId = (req.query.userId as string) || 'a0000000-0000-0000-0000-000000000001';
+    const userId = req.user?.id || (req.query.userId as string) || 'a0000000-0000-0000-0000-000000000001';
     const profile = await store.getProfile(userId);
     res.json({
       success: true,
@@ -17,9 +18,10 @@ export async function getWalletBalance(req: Request, res: Response) {
   }
 }
 
-export async function rechargeWallet(req: Request, res: Response) {
+export async function rechargeWallet(req: AuthRequest, res: Response) {
   try {
-    const { userId = 'a0000000-0000-0000-0000-000000000001', amount } = req.body;
+    const userId = req.user?.id || req.body.userId || 'a0000000-0000-0000-0000-000000000001';
+    const { amount } = req.body;
     if (!amount || Number(amount) <= 0) {
       return res.status(400).json({ success: false, message: 'Invalid recharge amount' });
     }
@@ -37,9 +39,9 @@ export async function rechargeWallet(req: Request, res: Response) {
   }
 }
 
-export async function getTransactions(req: Request, res: Response) {
+export async function getTransactions(req: AuthRequest, res: Response) {
   try {
-    const userId = (req.query.userId as string) || 'a0000000-0000-0000-0000-000000000001';
+    const userId = req.user?.id || (req.query.userId as string) || 'a0000000-0000-0000-0000-000000000001';
     const transactions = await store.getTransactions(userId);
     res.json({ success: true, data: transactions });
   } catch (err: any) {

@@ -9,20 +9,101 @@ import '../models/horoscope.dart';
 import '../models/kundli_result.dart';
 
 class ApiService {
-  final Dio _dio = Dio(
-    BaseOptions(
-      baseUrl: ApiConstants.baseUrl,
-      connectTimeout: const Duration(seconds: 5),
-      receiveTimeout: const Duration(seconds: 5),
-    ),
-  );
+  late final Dio _dio;
+  String? _authToken;
 
-  // Auth & Role
-  Future<Map<String, dynamic>> login({String? phone, String role = 'user'}) async {
+  String? get authToken => _authToken;
+
+  ApiService() {
+    _dio = Dio(
+      BaseOptions(
+        baseUrl: ApiConstants.baseUrl,
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 10),
+      ),
+    );
+
+    _dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) {
+          if (_authToken != null && _authToken!.isNotEmpty) {
+            options.headers['Authorization'] = 'Bearer $_authToken';
+          }
+          return handler.next(options);
+        },
+      ),
+    );
+  }
+
+  void setAuthToken(String? token) {
+    _authToken = token;
+  }
+
+  // ==========================================
+  // SUPABASE AUTHENTICATION APIS
+  // ==========================================
+  Future<Map<String, dynamic>> signUpWithSupabase({
+    required String email,
+    required String password,
+    String? fullName,
+    String? phone,
+    String role = 'user',
+    List<String>? specialties,
+    double? ratePerMinute,
+    int? experienceYears,
+    String? bio,
+  }) async {
+    final response = await _dio.post('/auth/signup', data: {
+      'email': email,
+      'password': password,
+      'fullName': fullName ?? 'Devotee / Client',
+      'phone': phone ?? '+919876543210',
+      'role': role,
+      'specialties': specialties ?? ['Vedic', 'Kundli'],
+      'ratePerMinute': ratePerMinute ?? 25.0,
+      'experienceYears': experienceYears ?? 5,
+      'bio': bio ?? '',
+    });
+    if (response.data['token'] != null) {
+      setAuthToken(response.data['token'] as String);
+    }
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> signInWithSupabase({
+    required String email,
+    required String password,
+  }) async {
     final response = await _dio.post('/auth/login', data: {
+      'email': email,
+      'password': password,
+    });
+    if (response.data['token'] != null) {
+      setAuthToken(response.data['token'] as String);
+    }
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> getMe() async {
+    final response = await _dio.get('/auth/me');
+    return response.data;
+  }
+
+  Future<void> signOut() async {
+    try {
+      await _dio.post('/auth/logout');
+    } catch (_) {}
+    setAuthToken(null);
+  }
+
+  Future<Map<String, dynamic>> quickLogin({String? phone, String role = 'user'}) async {
+    final response = await _dio.post('/auth/quick-login', data: {
       'phone': phone ?? '+919876543210',
       'role': role,
     });
+    if (response.data['token'] != null) {
+      setAuthToken(response.data['token'] as String);
+    }
     return response.data;
   }
 
@@ -31,9 +112,14 @@ class ApiService {
     return Astrologer.fromJson(response.data['data']);
   }
 
-  // User & Profile
-  Future<UserProfile> getUserProfile([String userId = ApiConstants.defaultUserId]) async {
-    final response = await _dio.get('/user/profile', queryParameters: {'userId': userId});
+  // ==========================================
+  // USER & PROFILE
+  // ==========================================
+  Future<UserProfile> getUserProfile([String? userId]) async {
+    final response = await _dio.get(
+      '/user/profile',
+      queryParameters: userId != null ? {'userId': userId} : null,
+    );
     return UserProfile.fromJson(response.data['data']);
   }
 
@@ -42,7 +128,9 @@ class ApiService {
     return UserProfile.fromJson(response.data['data']);
   }
 
-  // Astrologers Marketplace
+  // ==========================================
+  // ASTROLOGERS MARKETPLACE
+  // ==========================================
   Future<List<Astrologer>> getAstrologers({String? specialty}) async {
     final response = await _dio.get(
       '/astrologers',
@@ -57,9 +145,14 @@ class ApiService {
     return Astrologer.fromJson(response.data['data']);
   }
 
-  // Pandit Dashboard Operations
-  Future<Astrologer> getPanditProfile([String id = 'b0000000-0000-0000-0000-000000000001']) async {
-    final response = await _dio.get('/pandit/profile', queryParameters: {'id': id});
+  // ==========================================
+  // PANDIT DASHBOARD
+  // ==========================================
+  Future<Astrologer> getPanditProfile([String? id]) async {
+    final response = await _dio.get(
+      '/pandit/profile',
+      queryParameters: id != null ? {'id': id} : null,
+    );
     return Astrologer.fromJson(response.data['data']);
   }
 
@@ -88,51 +181,61 @@ class ApiService {
     return list.map((s) => ConsultationSession.fromJson(s)).toList();
   }
 
-  // Wallet
-  Future<double> getWalletBalance([String userId = ApiConstants.defaultUserId]) async {
-    final response = await _dio.get('/wallet/balance', queryParameters: {'userId': userId});
+  // ==========================================
+  // WALLET
+  // ==========================================
+  Future<double> getWalletBalance([String? userId]) async {
+    final response = await _dio.get(
+      '/wallet/balance',
+      queryParameters: userId != null ? {'userId': userId} : null,
+    );
     return (response.data['data']['walletBalance'] as num).toDouble();
   }
 
-  Future<double> rechargeWallet(double amount, [String userId = ApiConstants.defaultUserId]) async {
-    final response = await _dio.post(
-      '/wallet/recharge',
-      data: {'userId': userId, 'amount': amount},
-    );
+  Future<double> rechargeWallet(double amount, [String? userId]) async {
+    final Map<String, dynamic> body = {'amount': amount};
+    if (userId != null) body['userId'] = userId;
+    final response = await _dio.post('/wallet/recharge', data: body);
     return (response.data['data']['newBalance'] as num).toDouble();
   }
 
-  Future<List<WalletTransaction>> getTransactions([String userId = ApiConstants.defaultUserId]) async {
-    final response = await _dio.get('/wallet/transactions', queryParameters: {'userId': userId});
+  Future<List<WalletTransaction>> getTransactions([String? userId]) async {
+    final response = await _dio.get(
+      '/wallet/transactions',
+      queryParameters: userId != null ? {'userId': userId} : null,
+    );
     final list = response.data['data'] as List;
     return list.map((t) => WalletTransaction.fromJson(t)).toList();
   }
 
-  // Consultations & Messages
+  // ==========================================
+  // CONSULTATIONS & MESSAGES
+  // ==========================================
   Future<List<ChatMessage>> getMessages(String consultationId) async {
     final response = await _dio.get('/consultations/$consultationId/messages');
     final list = response.data['data'] as List;
     return list.map((m) => ChatMessage.fromJson(m)).toList();
   }
 
-  // Astrology Tools
+  // ==========================================
+  // ASTROLOGY TOOLS
+  // ==========================================
   Future<Map<String, Horoscope>> getAllHoroscopes() async {
     final response = await _dio.get('/astrology/horoscopes');
     final data = response.data['data'] as Map<String, dynamic>;
-    final Map<String, Horoscope> result = {};
-    data.forEach((key, val) {
-      result[key] = Horoscope.fromJson(key, val as Map<String, dynamic>);
+    return data.map((key, val) => MapEntry(key, Horoscope.fromJson(key, val as Map<String, dynamic>)));
+  }
+
+  Future<Horoscope> getHoroscope(String sign, [String timeframe = 'daily']) async {
+    final response = await _dio.get('/astrology/horoscope', queryParameters: {
+      'sign': sign,
+      'timeframe': timeframe,
     });
-    return result;
+    return Horoscope.fromJson(sign, response.data['data'] as Map<String, dynamic>);
   }
 
-  Future<Horoscope> getHoroscope(String sign) async {
-    final response = await _dio.get('/astrology/horoscope', queryParameters: {'sign': sign});
-    return Horoscope.fromJson(sign, response.data['data']);
-  }
-
-  Future<KundliResult> generateKundli(Map<String, dynamic> input) async {
-    final response = await _dio.post('/astrology/kundli', data: input);
+  Future<KundliResult> generateKundli(Map<String, dynamic> birthDetails) async {
+    final response = await _dio.post('/astrology/kundli', data: birthDetails);
     return KundliResult.fromJson(response.data['data']);
   }
 }
