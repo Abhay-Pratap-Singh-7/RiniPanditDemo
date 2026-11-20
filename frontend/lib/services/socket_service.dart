@@ -18,6 +18,7 @@ class SocketService {
   final _waitingController = StreamController<Map<String, dynamic>>.broadcast();
   final _declinedController = StreamController<Map<String, dynamic>>.broadcast();
   final _endedController = StreamController<Map<String, dynamic>>.broadcast();
+  final _astrologerStatusController = StreamController<Map<String, dynamic>>.broadcast();
   final _errorController = StreamController<String>.broadcast();
 
   Stream<Map<String, dynamic>> get onConsultationStarted => _startedController.stream;
@@ -28,6 +29,7 @@ class SocketService {
   Stream<Map<String, dynamic>> get onConsultationWaiting => _waitingController.stream;
   Stream<Map<String, dynamic>> get onConsultationDeclined => _declinedController.stream;
   Stream<Map<String, dynamic>> get onConsultationEnded => _endedController.stream;
+  Stream<Map<String, dynamic>> get onAstrologerStatus => _astrologerStatusController.stream;
   Stream<String> get onError => _errorController.stream;
 
   bool _isConnected = false;
@@ -79,6 +81,10 @@ class SocketService {
               case 'consultation:ended':
                 _endedController.add(payload);
                 break;
+              case 'astrologer:status':
+              case 'pandit:status':
+                _astrologerStatusController.add(payload);
+                break;
               case 'error':
                 _errorController.add(payload['message'] ?? 'An error occurred');
                 break;
@@ -97,6 +103,33 @@ class SocketService {
     } catch (e) {
       _isConnected = false;
     }
+  }
+
+  void updateAstrologerStatus({
+    required String astrologerId,
+    required bool isOnline,
+    bool? isBusy,
+  }) {
+    final data = <String, dynamic>{
+      'astrologerId': astrologerId,
+      'isOnline': isOnline,
+    };
+    if (isBusy != null) {
+      data['isBusy'] = isBusy;
+    }
+    final payload = jsonEncode({
+      'event': 'astrologer:status',
+      'data': data,
+    });
+
+    if (!_isConnected) {
+      connect();
+      Future.delayed(const Duration(milliseconds: 300), () {
+        _channel?.sink.add(payload);
+      });
+      return;
+    }
+    _channel?.sink.add(payload);
   }
 
   void initiateConsultation(String astrologerId) {

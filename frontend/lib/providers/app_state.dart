@@ -105,6 +105,11 @@ class AppState extends ChangeNotifier {
 
       await _restoreSession();
 
+      if (!_socket.isConnected) {
+        final uid = _userProfile?.id ?? _currentUser?['id']?.toString() ?? ApiConstants.defaultUserId;
+        _socket.connect(uid);
+      }
+
       // Load public marketplace and horoscope catalog
       await Future.wait([
         loadAstrologers(),
@@ -311,6 +316,39 @@ class AppState extends ChangeNotifier {
     _socket.onError.listen((msg) {
       _errorMessage = msg;
       notifyListeners();
+    });
+
+    _socket.onAstrologerStatus.listen((data) {
+      final astroId = data['astrologerId']?.toString();
+      final isOnline = data['isOnline'] as bool?;
+      final isBusy = (data['isBusy'] ?? data['busy']) as bool?;
+
+      if (astroId != null) {
+        final index = _astrologers.indexWhere((a) => a.id == astroId);
+        if (index != -1) {
+          final current = _astrologers[index];
+          _astrologers[index] = current.copyWith(
+            isOnline: isOnline ?? current.isOnline,
+            isBusy: isBusy ?? current.isBusy,
+          );
+        }
+
+        if (_activeAstrologer != null && _activeAstrologer!.id == astroId) {
+          _activeAstrologer = _activeAstrologer!.copyWith(
+            isOnline: isOnline ?? _activeAstrologer!.isOnline,
+            isBusy: isBusy ?? _activeAstrologer!.isBusy,
+          );
+        }
+
+        if (_currentPandit != null && _currentPandit!.id == astroId) {
+          _currentPandit = _currentPandit!.copyWith(
+            isOnline: isOnline ?? _currentPandit!.isOnline,
+            isBusy: isBusy ?? _currentPandit!.isBusy,
+          );
+        }
+
+        notifyListeners();
+      }
     });
   }
 
@@ -524,10 +562,19 @@ class AppState extends ChangeNotifier {
   Future<void> togglePanditOnline(bool isOnline) async {
     if (_currentPandit == null) return;
     try {
-      _currentPandit = await _api.updatePanditStatus(
+      _currentPandit = _currentPandit!.copyWith(isOnline: isOnline);
+      notifyListeners();
+
+      _socket.updateAstrologerStatus(
+        astrologerId: _currentPandit!.id,
+        isOnline: isOnline,
+      );
+
+      final updated = await _api.updatePanditStatus(
         id: _currentPandit!.id,
         isOnline: isOnline,
       );
+      _currentPandit = updated;
       notifyListeners();
     } catch (e) {
       _errorMessage = ApiService.extractErrorMessage(e);

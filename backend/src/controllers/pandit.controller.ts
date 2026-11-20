@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { store } from '../services/store.js';
+import { broadcastAstrologerStatus } from '../sockets/consultation.socket.js';
 
 export async function getPanditProfile(req: Request, res: Response) {
   try {
@@ -70,6 +71,7 @@ export async function updatePanditStatus(req: Request, res: Response) {
     if (!updated) {
       return res.status(500).json({ success: false, message: 'Failed to update pandit status' });
     }
+    broadcastAstrologerStatus(targetId, updated.is_online, updated.is_busy);
     res.json({ success: true, data: updated });
   } catch (err: any) {
     res.status(500).json({ success: false, message: err.message });

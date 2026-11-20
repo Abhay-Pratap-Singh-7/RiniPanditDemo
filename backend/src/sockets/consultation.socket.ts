@@ -9,7 +9,31 @@ interface AuthenticatedSocket extends WebSocket {
   isAlive?: boolean;
 }
 
+let wssInstance: WebSocketServer | null = null;
+
+export function broadcastToAll(message: any): void {
+  if (!wssInstance) return;
+  const payloadStr = JSON.stringify(message);
+  wssInstance.clients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(payloadStr);
+    }
+  });
+}
+
+export function broadcastAstrologerStatus(astrologerId: string, isOnline: boolean, isBusy?: boolean): void {
+  broadcastToAll({
+    event: 'astrologer:status',
+    data: {
+      astrologerId,
+      isOnline,
+      isBusy: isBusy ?? false,
+    },
+  });
+}
+
 export function setupConsultationSockets(wss: WebSocketServer) {
+  wssInstance = wss;
   const userSocketMap = new Map<string, AuthenticatedSocket>();
 
   // Setup callbacks for real-time per-minute billing
@@ -48,6 +72,7 @@ export function setupConsultationSockets(wss: WebSocketServer) {
         ended_at: new Date().toISOString(),
       });
       await store.setAstrologerBusy(session.astrologerId, false);
+      broadcastAstrologerStatus(session.astrologerId, true, false);
 
       const payload = {
         event: 'consultation:ended',
@@ -114,6 +139,7 @@ export function setupConsultationSockets(wss: WebSocketServer) {
           userSocketMap.set((astro as any).profile_id, ws);
         }
         console.log(`[WebSocket] Associated astrologer ID ${astro.id} with socket for ${userId}`);
+        broadcastAstrologerStatus(astro.id, astro.is_online ?? true, astro.is_busy ?? false);
       }
     });
 
@@ -179,6 +205,7 @@ export function setupConsultationSockets(wss: WebSocketServer) {
             });
 
             await store.setAstrologerBusy(astro.id, true);
+            broadcastAstrologerStatus(astro.id, astro.is_online ?? true, true);
 
             // Notify client that invitation has been sent and client must wait for pandit acceptance
             const waitingPayload = {
@@ -245,6 +272,8 @@ export function setupConsultationSockets(wss: WebSocketServer) {
             if (consultation) {
               await store.updateConsultation(sessionId, { status: 'declined', ended_at: new Date().toISOString() });
               await store.setAstrologerBusy(consultation.astrologer_id, false);
+              const astro = await store.getAstrologer(consultation.astrologer_id);
+              broadcastAstrologerStatus(consultation.astrologer_id, astro?.is_online ?? true, false);
               const declinedPayload = {
                 event: 'consultation:declined',
                 data: {
@@ -346,6 +375,8 @@ export function setupConsultationSockets(wss: WebSocketServer) {
               });
 
               await store.setAstrologerBusy(consultation.astrologer_id, false);
+              const astro = await store.getAstrologer(consultation.astrologer_id);
+              broadcastAstrologerStatus(consultation.astrologer_id, astro?.is_online ?? true, false);
 
               const endedPayload = {
                 event: 'consultation:ended',
@@ -364,9 +395,28 @@ export function setupConsultationSockets(wss: WebSocketServer) {
               // Broadcast consultation:ended to client and pandit
               broadcastToUser(consultation.user_id, endedPayload);
               broadcastToUser(consultation.astrologer_id, endedPayload);
-              const astro = await store.getAstrologer(consultation.astrologer_id);
               if (astro && (astro as any).profile_id) {
                 broadcastToUser((astro as any).profile_id, endedPayload);
+              }
+            }
+            break;
+          }
+
+          case 'astrologer:status':
+          case 'pandit:status':
+          case 'pandit:set_status': {
+            const astroId = data?.astrologerId || ws.astrologerId || userId;
+            const isOnline = data?.isOnline;
+            const isBusy = data?.isBusy;
+            if (astroId) {
+              const updates: any = {};
+              if (isOnline !== undefined) updates.is_online = isOnline;
+              if (isBusy !== undefined) updates.is_busy = isBusy;
+              const updated = await store.updateAstrologer(astroId, updates);
+              if (updated) {
+                broadcastAstrologerStatus(astroId, updated.is_online, updated.is_busy);
+              } else {
+                broadcastAstrologerStatus(astroId, isOnline ?? true, isBusy ?? false);
               }
             }
             break;
@@ -385,10 +435,25 @@ export function setupConsultationSockets(wss: WebSocketServer) {
       }
     });
 
-    ws.on('close', () => {
+    ws.on('close', async () => {
       console.log(`[WebSocket] Client disconnected: ${userId}`);
       userSocketMap.delete(userId);
-      if (ws.astrologerId) userSocketMap.delete(ws.astrologerId);
+      if (ws.astrologerId) {
+        userSocketMap.delete(ws.astrologerId);
+        // Check if astrologer still has an active socket connection
+        let stillConnected = false;
+        for (const [id, socket] of userSocketMap.entries()) {
+          if ((id === ws.astrologerId || socket.astrologerId === ws.astrologerId) && socket.readyState === WebSocket.OPEN) {
+            stillConnected = true;
+            break;
+          }
+        }
+        if (!stillConnected) {
+          await store.updateAstrologer(ws.astrologerId, { is_online: false });
+          broadcastAstrologerStatus(ws.astrologerId, false, false);
+          console.log(`[WebSocket] Astrologer ${ws.astrologerId} marked offline due to disconnect`);
+        }
+      }
     });
   });
 

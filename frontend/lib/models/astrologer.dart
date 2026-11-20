@@ -27,6 +27,36 @@ class Astrologer {
     required this.avatarUrl,
   });
 
+  Astrologer copyWith({
+    String? id,
+    String? displayName,
+    List<String>? specialties,
+    List<String>? languages,
+    int? experienceYears,
+    double? ratePerMinute,
+    double? rating,
+    int? totalReviews,
+    bool? isOnline,
+    bool? isBusy,
+    String? bio,
+    String? avatarUrl,
+  }) {
+    return Astrologer(
+      id: id ?? this.id,
+      displayName: displayName ?? this.displayName,
+      specialties: specialties ?? this.specialties,
+      languages: languages ?? this.languages,
+      experienceYears: experienceYears ?? this.experienceYears,
+      ratePerMinute: ratePerMinute ?? this.ratePerMinute,
+      rating: rating ?? this.rating,
+      totalReviews: totalReviews ?? this.totalReviews,
+      isOnline: isOnline ?? this.isOnline,
+      isBusy: isBusy ?? this.isBusy,
+      bio: bio ?? this.bio,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+    );
+  }
+
   factory Astrologer.fromJson(Map<String, dynamic>? json) {
     if (json == null) {
       return Astrologer(

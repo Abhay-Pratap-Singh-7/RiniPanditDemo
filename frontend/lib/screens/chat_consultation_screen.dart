@@ -287,6 +287,10 @@ class _ChatConsultationScreenState extends State<ChatConsultationScreen> {
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
+    final astro = appState.astrologers.firstWhere(
+      (a) => a.id == widget.astrologer.id,
+      orElse: () => widget.astrologer,
+    );
     final messages = appState.messages;
 
     _scrollToBottom();
@@ -301,10 +305,10 @@ class _ChatConsultationScreenState extends State<ChatConsultationScreen> {
             CircleAvatar(
               radius: 18,
               backgroundColor: AppTheme.cardPurple.withAlpha(50),
-              backgroundImage: widget.astrologer.avatarUrl.isNotEmpty
-                  ? NetworkImage(widget.astrologer.avatarUrl)
+              backgroundImage: astro.avatarUrl.isNotEmpty
+                  ? NetworkImage(astro.avatarUrl)
                   : null,
-              child: widget.astrologer.avatarUrl.isEmpty
+              child: astro.avatarUrl.isEmpty
                   ? const Icon(Icons.person, size: 20, color: AppTheme.cardLilac)
                   : null,
             ),
@@ -316,7 +320,7 @@ class _ChatConsultationScreenState extends State<ChatConsultationScreen> {
                   Wrap(
                     children: [
                       Text(
-                        widget.astrologer.displayName,
+                        astro.displayName,
                         style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
                         softWrap: true,
                       ),
@@ -328,7 +332,9 @@ class _ChatConsultationScreenState extends State<ChatConsultationScreen> {
                         width: 7,
                         height: 7,
                         decoration: BoxDecoration(
-                          color: appState.activeSession != null ? AppTheme.accentCyan : Colors.amber,
+                          color: appState.activeSession != null
+                              ? AppTheme.accentCyan
+                              : (astro.isOnline ? Colors.amber : Colors.grey),
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -336,11 +342,15 @@ class _ChatConsultationScreenState extends State<ChatConsultationScreen> {
                       Expanded(
                         child: Text(
                           appState.activeSession != null
-                              ? 'Connection Established • ₹${widget.astrologer.ratePerMinute.toStringAsFixed(0)}/min'
-                              : 'Waiting for Pandit to accept...',
+                              ? 'Connection Established • ₹${astro.ratePerMinute.toStringAsFixed(0)}/min'
+                              : (astro.isOnline
+                                  ? 'Waiting for Pandit to accept...'
+                                  : 'Pandit went offline'),
                           style: TextStyle(
                             fontSize: 11,
-                            color: appState.activeSession != null ? AppTheme.cardLilac : Colors.amber.shade200,
+                            color: appState.activeSession != null
+                                ? AppTheme.cardLilac
+                                : (astro.isOnline ? Colors.amber.shade200 : AppTheme.textMuted),
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,

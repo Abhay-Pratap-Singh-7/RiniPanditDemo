@@ -18,11 +18,26 @@ class _AstrologerCardState extends State<AstrologerCard> {
   bool _isExpanded = false;
 
   void _handleConsult(BuildContext context, AppState appState) {
-    if (appState.walletBalance < widget.astrologer.ratePerMinute) {
+    final astro = appState.astrologers.firstWhere(
+      (a) => a.id == widget.astrologer.id,
+      orElse: () => widget.astrologer,
+    );
+
+    if (!astro.isOnline) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${astro.displayName} is currently offline.'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+      return;
+    }
+
+    if (appState.walletBalance < astro.ratePerMinute) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Minimum balance of ₹${widget.astrologer.ratePerMinute.toStringAsFixed(0)} required to start consultation.',
+            'Minimum balance of ₹${astro.ratePerMinute.toStringAsFixed(0)} required to start consultation.',
           ),
           backgroundColor: Theme.of(context).colorScheme.error,
         ),
@@ -30,19 +45,22 @@ class _AstrologerCardState extends State<AstrologerCard> {
       return;
     }
 
-    appState.startConsultation(widget.astrologer.id);
+    appState.startConsultation(astro.id);
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => ChatConsultationScreen(astrologer: widget.astrologer),
+        builder: (_) => ChatConsultationScreen(astrologer: astro),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final appState = context.read<AppState>();
-    final astro = widget.astrologer;
+    final appState = context.watch<AppState>();
+    final astro = appState.astrologers.firstWhere(
+      (a) => a.id == widget.astrologer.id,
+      orElse: () => widget.astrologer,
+    );
     final bioText = astro.bio.isNotEmpty
         ? astro.bio
         : '${astro.specialties.join(", ")} expert with ${astro.experienceYears}+ years experience in Vedic consultations, kundli chart analysis, and life guidance.';
@@ -260,26 +278,35 @@ class _AstrologerCardState extends State<AstrologerCard> {
                   child: Container(
                     height: 46,
                     decoration: BoxDecoration(
-                      color: AppTheme.cardPurple,
+                      color: astro.isOnline ? AppTheme.cardPurple : AppTheme.surfaceTile,
                       borderRadius: BorderRadius.circular(23),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppTheme.cardPurple.withAlpha(50),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
+                      border: astro.isOnline ? null : Border.all(color: AppTheme.borderSubtle),
+                      boxShadow: astro.isOnline
+                          ? [
+                              BoxShadow(
+                                color: AppTheme.cardPurple.withAlpha(50),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              ),
+                            ]
+                          : null,
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.add, color: Colors.white, size: 17),
+                        Icon(
+                          astro.isOnline ? Icons.add : Icons.do_not_disturb_on_outlined,
+                          color: astro.isOnline ? Colors.white : AppTheme.textMuted,
+                          size: 17,
+                        ),
                         const SizedBox(width: 4),
                         Flexible(
                           child: Text(
-                            'Consult (₹${astro.ratePerMinute.toStringAsFixed(0)}/min)',
-                            style: const TextStyle(
-                              color: Colors.white,
+                            astro.isOnline
+                                ? 'Consult (₹${astro.ratePerMinute.toStringAsFixed(0)}/min)'
+                                : 'Offline (₹${astro.ratePerMinute.toStringAsFixed(0)}/min)',
+                            style: TextStyle(
+                              color: astro.isOnline ? Colors.white : AppTheme.textMuted,
                               fontWeight: FontWeight.w700,
                               fontSize: 13,
                               letterSpacing: -0.2,
