@@ -61,6 +61,7 @@ class AppState extends ChangeNotifier {
   List<ChatMessage> _messages = [];
   int _activeSessionElapsedSeconds = 0;
   bool _isTimerRunning = false;
+  bool _isWaitingForPandit = false;
   Timer? _localSecondsTimer;
 
   // Getters
@@ -88,6 +89,7 @@ class AppState extends ChangeNotifier {
   List<ChatMessage> get messages => _messages;
   int get activeSessionElapsedSeconds => _activeSessionElapsedSeconds;
   bool get isTimerRunning => _isTimerRunning;
+  bool get isWaitingForPandit => _isWaitingForPandit;
 
   AppState() {
     _initApp();
@@ -210,8 +212,14 @@ class AppState extends ChangeNotifier {
   }
 
   void _listenToSocketEvents() {
+    _socket.onConsultationWaiting.listen((data) {
+      _isWaitingForPandit = true;
+      notifyListeners();
+    });
+
     _socket.onConsultationStarted.listen((data) {
       _incomingRequest = null;
+      _isWaitingForPandit = false;
       _activeSession = ConsultationSession.fromJson(data['session']);
       if (data['astrologer'] != null) {
         _activeAstrologer = Astrologer.fromJson(data['astrologer']);
@@ -226,6 +234,13 @@ class AppState extends ChangeNotifier {
       _localSecondsTimer?.cancel();
       _localSecondsTimer = null;
 
+      notifyListeners();
+    });
+
+    _socket.onConsultationDeclined.listen((data) {
+      _isWaitingForPandit = false;
+      _activeSession = null;
+      _errorMessage = data['message'] ?? 'Pandit is unavailable or declined the request.';
       notifyListeners();
     });
 
@@ -592,8 +607,14 @@ class AppState extends ChangeNotifier {
   }
 
   void declineIncomingRequest() {
-    _incomingRequest = null;
-    notifyListeners();
+    if (_incomingRequest != null) {
+      final sessionId = _incomingRequest!['session']?['id'];
+      if (sessionId != null) {
+        _socket.declineConsultation(sessionId.toString());
+      }
+      _incomingRequest = null;
+      notifyListeners();
+    }
   }
 
   // Client Operations
@@ -696,7 +717,15 @@ class AppState extends ChangeNotifier {
 
   // Consultation Actions
   void startConsultation(String astrologerId) {
+    _isWaitingForPandit = true;
+    _activeSession = null;
+    _activeSessionElapsedSeconds = 0;
+    _activeConsultationEarned = 0.0;
+    _isTimerRunning = false;
+    _localSecondsTimer?.cancel();
+    _localSecondsTimer = null;
     _socket.initiateConsultation(astrologerId);
+    notifyListeners();
   }
 
   void endConsultation() {
@@ -706,16 +735,17 @@ class AppState extends ChangeNotifier {
   void endActiveConsultation() {
     if (_activeSession != null) {
       _socket.endConsultation(_activeSession!.id);
-      _localSecondsTimer?.cancel();
-      _localSecondsTimer = null;
-      _isTimerRunning = false;
-      _activeSessionElapsedSeconds = 0;
-      _activeConsultationEarned = 0.0;
-      _activeSession = null;
-      _activeAstrologer = null;
-      _activeConsultationUser = null;
-      notifyListeners();
     }
+    _isWaitingForPandit = false;
+    _localSecondsTimer?.cancel();
+    _localSecondsTimer = null;
+    _isTimerRunning = false;
+    _activeSessionElapsedSeconds = 0;
+    _activeConsultationEarned = 0.0;
+    _activeSession = null;
+    _activeAstrologer = null;
+    _activeConsultationUser = null;
+    notifyListeners();
   }
 
   void _startTimer() {

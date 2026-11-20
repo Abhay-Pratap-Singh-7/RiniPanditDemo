@@ -33,7 +33,7 @@ export interface Consultation {
   user_id: string;
   astrologer_id: string;
   type: 'chat' | 'voice' | 'video';
-  status: 'requested' | 'accepted' | 'active' | 'completed' | 'cancelled' | 'insufficient_balance';
+  status: 'requested' | 'pending' | 'accepted' | 'active' | 'completed' | 'cancelled' | 'declined' | 'insufficient_balance';
   rate_per_minute: number;
   duration_seconds: number;
   total_deducted: number;

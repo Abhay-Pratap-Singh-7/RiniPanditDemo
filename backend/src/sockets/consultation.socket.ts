@@ -166,12 +166,12 @@ export function setupConsultationSockets(wss: WebSocketServer) {
               await store.updateProfile(userId, { wallet_balance: user.wallet_balance });
             }
 
-            // Create consultation session record
+            // Create consultation session record with pending status
             const consultation = await store.createConsultation({
               user_id: userId,
               astrologer_id: astro.id,
               type: 'chat',
-              status: 'active',
+              status: 'pending',
               rate_per_minute: astro.rate_per_minute,
               duration_seconds: 0,
               total_deducted: 0,
@@ -180,17 +180,17 @@ export function setupConsultationSockets(wss: WebSocketServer) {
 
             await store.setAstrologerBusy(astro.id, true);
 
-            // Send confirmation to client that connection is established
-            const startedPayload = {
-              event: 'consultation:started',
+            // Notify client that invitation has been sent and client must wait for pandit acceptance
+            const waitingPayload = {
+              event: 'consultation:waiting',
               data: {
                 session: consultation,
                 astrologer: astro,
                 user: user,
-                message: `Connection established with ${astro.display_name}`,
+                message: `Invitation sent to ${astro.display_name}. Waiting for acceptance...`,
               },
             };
-            ws.send(JSON.stringify(startedPayload));
+            ws.send(JSON.stringify(waitingPayload));
 
             // Forward incoming request to pandit
             const incomingPayload = {
@@ -224,13 +224,35 @@ export function setupConsultationSockets(wss: WebSocketServer) {
               const startedPayload = {
                 event: 'consultation:started',
                 data: {
-                  session: consultation,
+                  session: { ...consultation, status: 'active' },
                   astrologer: astro,
                   user: user,
+                  message: `Connection established with ${astro?.display_name || 'Pandit'}`,
                 },
               };
               broadcastToUser(consultation.user_id, startedPayload);
               broadcastToUser(consultation.astrologer_id, startedPayload);
+              if (astro && (astro as any).profile_id) {
+                broadcastToUser((astro as any).profile_id, startedPayload);
+              }
+            }
+            break;
+          }
+
+          case 'consultation:decline': {
+            const { sessionId } = data;
+            const consultation = await store.getConsultation(sessionId);
+            if (consultation) {
+              await store.updateConsultation(sessionId, { status: 'declined', ended_at: new Date().toISOString() });
+              await store.setAstrologerBusy(consultation.astrologer_id, false);
+              const declinedPayload = {
+                event: 'consultation:declined',
+                data: {
+                  sessionId,
+                  message: 'Pandit is currently unavailable or declined the request.',
+                },
+              };
+              broadcastToUser(consultation.user_id, declinedPayload);
             }
             break;
           }

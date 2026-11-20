@@ -15,6 +15,8 @@ class SocketService {
   final _messageController = StreamController<ChatMessage>.broadcast();
   final _tickController = StreamController<Map<String, dynamic>>.broadcast();
   final _timerStartedController = StreamController<Map<String, dynamic>>.broadcast();
+  final _waitingController = StreamController<Map<String, dynamic>>.broadcast();
+  final _declinedController = StreamController<Map<String, dynamic>>.broadcast();
   final _endedController = StreamController<Map<String, dynamic>>.broadcast();
   final _errorController = StreamController<String>.broadcast();
 
@@ -23,6 +25,8 @@ class SocketService {
   Stream<ChatMessage> get onChatMessage => _messageController.stream;
   Stream<Map<String, dynamic>> get onBillingTick => _tickController.stream;
   Stream<Map<String, dynamic>> get onTimerStarted => _timerStartedController.stream;
+  Stream<Map<String, dynamic>> get onConsultationWaiting => _waitingController.stream;
+  Stream<Map<String, dynamic>> get onConsultationDeclined => _declinedController.stream;
   Stream<Map<String, dynamic>> get onConsultationEnded => _endedController.stream;
   Stream<String> get onError => _errorController.stream;
 
@@ -66,6 +70,12 @@ class SocketService {
               case 'consultation:timer_started':
                 _timerStartedController.add(payload);
                 break;
+              case 'consultation:waiting':
+                _waitingController.add(payload);
+                break;
+              case 'consultation:declined':
+                _declinedController.add(payload);
+                break;
               case 'consultation:ended':
                 _endedController.add(payload);
                 break;
@@ -108,6 +118,22 @@ class SocketService {
   void acceptConsultation(String sessionId) {
     final payload = jsonEncode({
       'event': 'consultation:accept',
+      'data': {'sessionId': sessionId},
+    });
+
+    if (!_isConnected) {
+      connect();
+      Future.delayed(const Duration(milliseconds: 300), () {
+        _channel?.sink.add(payload);
+      });
+      return;
+    }
+    _channel?.sink.add(payload);
+  }
+
+  void declineConsultation(String sessionId) {
+    final payload = jsonEncode({
+      'event': 'consultation:decline',
       'data': {'sessionId': sessionId},
     });
 
