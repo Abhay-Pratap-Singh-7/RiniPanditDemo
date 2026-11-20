@@ -44,7 +44,6 @@ class _HoroscopeCardState extends State<HoroscopeCard> {
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
-    final horoscope = appState.currentHoroscope;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -106,12 +105,12 @@ class _HoroscopeCardState extends State<HoroscopeCard> {
             itemCount: _zodiacList.length,
             onPageChanged: (index) {
               setState(() => _currentPage = index);
-              final signKey = _zodiacList[index]['key']!;
-              appState.loadHoroscope(signKey);
             },
             itemBuilder: (context, index) {
               final z = _zodiacList[index];
               final isCurrent = index == _currentPage;
+              final signKey = z['key']!;
+              final signHoroscope = appState.horoscopes[signKey];
 
               return Container(
                 margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
@@ -155,7 +154,7 @@ class _HoroscopeCardState extends State<HoroscopeCard> {
                           ),
                           child: ClipOval(
                             child: Image.asset(
-                              'assets/zodiac/${z["key"]}.png',
+                              'assets/zodiac/$signKey.png',
                               fit: BoxFit.cover,
                             ),
                           ),
@@ -207,14 +206,13 @@ class _HoroscopeCardState extends State<HoroscopeCard> {
                     ),
                     const SizedBox(height: 12),
 
-                    // Prediction Text with full wrapping
+                    // Prediction Text from pre-fetched map
                     Expanded(
                       child: Wrap(
                         children: [
                           Text(
-                            (isCurrent && horoscope != null)
-                                ? horoscope.prediction
-                                : 'Cosmic alignment brings auspicious clarity in personal ambitions and relationship dynamics today.',
+                            signHoroscope?.prediction ??
+                                'Cosmic energy brings clarity in key pursuits and harmonious life balance today.',
                             style: const TextStyle(
                               fontSize: 13,
                               height: 1.42,
@@ -241,7 +239,7 @@ class _HoroscopeCardState extends State<HoroscopeCard> {
                             border: Border.all(color: AppTheme.borderSubtle),
                           ),
                           child: Text(
-                            'Color: ${(isCurrent && horoscope != null) ? horoscope.luckyColor : "Coral"}',
+                            'Color: ${signHoroscope?.luckyColor ?? "Coral"}',
                             style: const TextStyle(
                               fontSize: 11.5,
                               color: AppTheme.cardLilac,
@@ -258,7 +256,7 @@ class _HoroscopeCardState extends State<HoroscopeCard> {
                             border: Border.all(color: AppTheme.borderSubtle),
                           ),
                           child: Text(
-                            'No: ${(isCurrent && horoscope != null) ? horoscope.luckyNumber.toString() : "7"}',
+                            'No: ${signHoroscope?.luckyNumber ?? 9}',
                             style: const TextStyle(
                               fontSize: 11.5,
                               color: AppTheme.cardCoral,

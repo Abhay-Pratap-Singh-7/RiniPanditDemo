@@ -190,3 +190,16 @@ export function getDailyHoroscope(sign: string) {
 
   return horoscopes[normalized] || horoscopes['aries'];
 }
+
+export function getAllDailyHoroscopes() {
+  const signs = [
+    'aries', 'taurus', 'gemini', 'cancer',
+    'leo', 'virgo', 'libra', 'scorpio',
+    'sagittarius', 'capricorn', 'aquarius', 'pisces'
+  ];
+  const all: Record<string, ReturnType<typeof getDailyHoroscope>> = {};
+  for (const s of signs) {
+    all[s] = getDailyHoroscope(s);
+  }
+  return all;
+}

@@ -27,6 +27,7 @@ class AppState extends ChangeNotifier {
   UserProfile? _userProfile;
   List<Astrologer> _astrologers = [];
   List<WalletTransaction> _transactions = [];
+  Map<String, Horoscope> _horoscopes = {};
   Horoscope? _currentHoroscope;
   KundliResult? _currentKundli;
 
@@ -53,6 +54,7 @@ class AppState extends ChangeNotifier {
   double get walletBalance => _userProfile?.walletBalance ?? 0.0;
   List<Astrologer> get astrologers => _astrologers;
   List<WalletTransaction> get transactions => _transactions;
+  Map<String, Horoscope> get horoscopes => _horoscopes;
   Horoscope? get currentHoroscope => _currentHoroscope;
   KundliResult? get currentKundli => _currentKundli;
 
@@ -89,7 +91,7 @@ class AppState extends ChangeNotifier {
       await Future.wait([
         loadProfile(),
         loadAstrologers(),
-        loadHoroscope('aries'),
+        loadAllHoroscopes(),
         loadPanditData('b0000000-0000-0000-0000-000000000001'),
       ]);
     } catch (e) {
@@ -325,9 +327,30 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  Future<void> loadAllHoroscopes() async {
+    try {
+      _horoscopes = await _api.getAllHoroscopes();
+      if (_horoscopes.containsKey('aries')) {
+        _currentHoroscope = _horoscopes['aries'];
+      }
+      notifyListeners();
+    } catch (e) {
+      // fallback
+    }
+  }
+
   Future<void> loadHoroscope(String sign) async {
+    final key = sign.toLowerCase();
+    if (_horoscopes.containsKey(key)) {
+      _currentHoroscope = _horoscopes[key];
+      notifyListeners();
+      return;
+    }
     try {
       _currentHoroscope = await _api.getHoroscope(sign);
+      if (_currentHoroscope != null) {
+        _horoscopes[key] = _currentHoroscope!;
+      }
       notifyListeners();
     } catch (e) {
       // fallback

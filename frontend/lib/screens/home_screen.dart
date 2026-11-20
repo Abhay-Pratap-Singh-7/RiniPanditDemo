@@ -56,33 +56,9 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Big Hero Title (as in reference image)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              child: Center(
-                child: Wrap(
-                  alignment: WrapAlignment.center,
-                  children: const [
-                    Text(
-                      'Cosmic Insight\nand\ndaily horoscope',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w900,
-                        color: AppTheme.textWhite,
-                        letterSpacing: -0.5,
-                        height: 1.25,
-                      ),
-                      softWrap: true,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
             // Top 3 Quick Feature Tiles (with cut out transparent assets)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               child: Row(
                 children: [
                   QuickFeatureTile(
@@ -112,7 +88,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 12),
 
             // 3 Large Featured Story Cards (with cut out transparent assets)
             FeaturedStoryCard(

@@ -21,16 +21,16 @@ class QuickFeatureTile extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         child: Container(
-          height: 96, // Reduced compact height
+          height: 74, // Ultra-compact sleek height
           margin: const EdgeInsets.symmetric(horizontal: 4),
           decoration: BoxDecoration(
             color: AppTheme.surfaceTile,
-            borderRadius: AppTheme.tileRadius,
+            borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withAlpha(70),
-                blurRadius: 8,
-                offset: const Offset(0, 3),
+                color: Colors.black.withAlpha(60),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
               ),
             ],
           ),
@@ -40,13 +40,13 @@ class QuickFeatureTile extends StatelessWidget {
             children: [
               // Asset taking full card size
               Padding(
-                padding: const EdgeInsets.only(top: 6, bottom: 20, left: 6, right: 6),
+                padding: const EdgeInsets.only(top: 4, bottom: 16, left: 4, right: 4),
                 child: Image.asset(
                   'assets/icons/$assetName',
                   fit: BoxFit.contain,
                   errorBuilder: (context, error, stackTrace) {
                     return Center(
-                      child: Icon(fallbackIcon, color: AppTheme.cardLilac, size: 30),
+                      child: Icon(fallbackIcon, color: AppTheme.cardLilac, size: 24),
                     );
                   },
                 ),
@@ -61,11 +61,11 @@ class QuickFeatureTile extends StatelessWidget {
                       end: Alignment.bottomCenter,
                       colors: [
                         Colors.transparent,
-                        Color(0x220B0E23),
-                        Color(0xD90B0E23),
-                        Color(0xF50B0E23),
+                        Color(0x330B0E23),
+                        Color(0xE60B0E23),
+                        Color(0xF80B0E23),
                       ],
-                      stops: [0.0, 0.40, 0.72, 1.0],
+                      stops: [0.0, 0.35, 0.70, 1.0],
                     ),
                   ),
                 ),
@@ -73,9 +73,9 @@ class QuickFeatureTile extends StatelessWidget {
 
               // Title written on top of the vertical overlay
               Positioned(
-                left: 4,
-                right: 4,
-                bottom: 6,
+                left: 3,
+                right: 3,
+                bottom: 4,
                 child: Center(
                   child: Wrap(
                     alignment: WrapAlignment.center,
@@ -85,12 +85,12 @@ class QuickFeatureTile extends StatelessWidget {
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                           color: AppTheme.textWhite,
-                          fontSize: 10.5,
+                          fontSize: 9.8,
                           fontWeight: FontWeight.w700,
                           letterSpacing: -0.2,
-                          height: 1.15,
+                          height: 1.1,
                         ),
-                        maxLines: 2,
+                        maxLines: 1,
                         softWrap: true,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -104,8 +104,8 @@ class QuickFeatureTile extends StatelessWidget {
                 child: IgnorePointer(
                   child: Container(
                     decoration: BoxDecoration(
-                      borderRadius: AppTheme.tileRadius,
-                      border: Border.all(color: AppTheme.borderSubtle, width: 1.2),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppTheme.borderSubtle, width: 1.0),
                     ),
                   ),
                 ),

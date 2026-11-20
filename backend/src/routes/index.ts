@@ -3,7 +3,7 @@ import { getAstrologers, getAstrologerById } from '../controllers/astrologers.co
 import { getUserProfile, updateUserProfile, mockLogin } from '../controllers/user.controller.js';
 import { getWalletBalance, rechargeWallet, getTransactions } from '../controllers/wallet.controller.js';
 import { getConsultationHistory, getConsultationMessages } from '../controllers/consultations.controller.js';
-import { getHoroscope, generateKundli } from '../controllers/astrology.controller.js';
+import { getHoroscope, getAllHoroscopes, generateKundli } from '../controllers/astrology.controller.js';
 import {
   getPanditProfile,
   updatePanditStatus,
@@ -40,6 +40,7 @@ router.get('/consultations/history', getConsultationHistory);
 router.get('/consultations/:id/messages', getConsultationMessages);
 
 // Astrology Tools
+router.get('/astrology/horoscopes', getAllHoroscopes);
 router.get('/astrology/horoscope', getHoroscope);
 router.post('/astrology/kundli', generateKundli);
 

@@ -1,11 +1,24 @@
 import { Request, Response } from 'express';
-import { calculateKundli, getDailyHoroscope } from '../services/astrology.js';
+import { calculateKundli, getDailyHoroscope, getAllDailyHoroscopes } from '../services/astrology.js';
 
 export async function getHoroscope(req: Request, res: Response) {
   try {
-    const sign = (req.query.sign as string) || 'aries';
+    const sign = (req.query.sign as string) || 'all';
+    if (sign.toLowerCase() === 'all') {
+      const allHoroscopes = getAllDailyHoroscopes();
+      return res.json({ success: true, data: allHoroscopes });
+    }
     const horoscope = getDailyHoroscope(sign);
     res.json({ success: true, sign, data: horoscope });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+}
+
+export async function getAllHoroscopes(req: Request, res: Response) {
+  try {
+    const all = getAllDailyHoroscopes();
+    res.json({ success: true, data: all });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
   }

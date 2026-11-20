@@ -116,6 +116,16 @@ class ApiService {
   }
 
   // Astrology Tools
+  Future<Map<String, Horoscope>> getAllHoroscopes() async {
+    final response = await _dio.get('/astrology/horoscopes');
+    final data = response.data['data'] as Map<String, dynamic>;
+    final Map<String, Horoscope> result = {};
+    data.forEach((key, val) {
+      result[key] = Horoscope.fromJson(key, val as Map<String, dynamic>);
+    });
+    return result;
+  }
+
   Future<Horoscope> getHoroscope(String sign) async {
     final response = await _dio.get('/astrology/horoscope', queryParameters: {'sign': sign});
     return Horoscope.fromJson(sign, response.data['data']);
