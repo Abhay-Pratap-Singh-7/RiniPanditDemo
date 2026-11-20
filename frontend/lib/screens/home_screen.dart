@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/theme/app_theme.dart';
 import '../providers/app_state.dart';
 import '../widgets/app_header.dart';
+import '../widgets/quick_feature_tile.dart';
+import '../widgets/featured_story_card.dart';
 import '../widgets/horoscope_card.dart';
 import '../widgets/astrologer_card.dart';
 import 'astrologer_list_screen.dart';
@@ -18,14 +21,6 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
 
-  final List<Map<String, dynamic>> _quickServices = const [
-    {'title': 'Vedic', 'icon': Icons.brightness_high, 'color': Color(0xFFFFB300)},
-    {'title': 'Tarot', 'icon': Icons.style, 'color': Color(0xFFFF7043)},
-    {'title': 'Numerology', 'icon': Icons.pin, 'color': Color(0xFF42A5F5)},
-    {'title': 'Vastu', 'icon': Icons.home_work, 'color': Color(0xFF66BB6A)},
-    {'title': 'Kundli', 'icon': Icons.auto_stories, 'color': Color(0xFFAB47BC)},
-  ];
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -39,15 +34,16 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
 
     return Scaffold(
+      backgroundColor: AppTheme.backgroundDark,
       body: pages[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) => setState(() => _currentIndex = index),
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.psychology), label: 'Astrologers'),
-          BottomNavigationBarItem(icon: Icon(Icons.auto_stories), label: 'Kundli'),
-          BottomNavigationBarItem(icon: Icon(Icons.account_balance_wallet), label: 'Wallet'),
+          BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.people_alt_outlined), label: 'Astrologers'),
+          BottomNavigationBarItem(icon: Icon(Icons.auto_stories_outlined), label: 'Kundli'),
+          BottomNavigationBarItem(icon: Icon(Icons.account_balance_wallet_outlined), label: 'Wallet'),
         ],
       ),
     );
@@ -55,138 +51,149 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildHomeFeed(ThemeData theme, AppState appState) {
     return Scaffold(
-      appBar: const AppHeader(title: 'Rini Pandit Astro'),
+      backgroundColor: AppTheme.backgroundDark,
+      appBar: const AppHeader(title: 'Rini Astro'),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Promo Banner
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF2A0845), Color(0xFF6441A5)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0x44FFB300)),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.primary,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: const Text(
-                            'SPECIAL LAUNCH OFFER',
-                            style: TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'First Consultation with Rini Pandit',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
-                        ),
-                        const SizedBox(height: 4),
-                        const Text(
-                          '25+ Yrs Experience • 100% Confidential',
-                          style: TextStyle(fontSize: 12, color: Colors.white70),
-                        ),
-                      ],
+            // Big Hero Title (as in reference image)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Center(
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  children: const [
+                    Text(
+                      'Cosmic Insight\nand\ndaily horoscope',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w900,
+                        color: AppTheme.textWhite,
+                        letterSpacing: -0.5,
+                        height: 1.25,
+                      ),
+                      softWrap: true,
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Icon(Icons.workspace_premium, size: 48, color: theme.colorScheme.primary),
-                ],
+                  ],
+                ),
               ),
             ),
 
-            // Quick Service Category Icons
+            // Top 3 Quick Feature Tiles (as in reference image)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Text(
-                'Explore Consultations',
-                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Colors.white),
-              ),
-            ),
-            SizedBox(
-              height: 90,
-              child: ListView.separated(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                scrollDirection: Axis.horizontal,
-                itemCount: _quickServices.length,
-                separatorBuilder: (_, _) => const SizedBox(width: 14),
-                itemBuilder: (context, index) {
-                  final s = _quickServices[index];
-                  return GestureDetector(
+              child: Row(
+                children: [
+                  QuickFeatureTile(
+                    title: 'Affirmation for You',
+                    assetName: 'tile_affirmation.png',
+                    fallbackIcon: Icons.spa_outlined,
                     onTap: () {
-                      if (s['title'] == 'Kundli') {
-                        setState(() => _currentIndex = 2);
-                      } else {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => AstrologerListScreen(initialCategory: s['title']),
-                          ),
-                        );
-                      }
+                      setState(() => _currentIndex = 1);
                     },
-                    child: Column(
-                      children: [
-                        CircleAvatar(
-                          radius: 26,
-                          backgroundColor: theme.colorScheme.surface,
-                          child: Icon(s['icon'] as IconData, color: s['color'] as Color, size: 24),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          s['title'] as String,
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.white),
-                        ),
-                      ],
-                    ),
-                  );
-                },
+                  ),
+                  QuickFeatureTile(
+                    title: 'Zodiac Signs',
+                    assetName: 'tile_zodiac.png',
+                    fallbackIcon: Icons.nightlight_round,
+                    onTap: () {
+                      setState(() => _currentIndex = 2);
+                    },
+                  ),
+                  QuickFeatureTile(
+                    title: 'Lunar Calendar',
+                    assetName: 'tile_calendar.png',
+                    fallbackIcon: Icons.calendar_month_outlined,
+                    onTap: () {
+                      setState(() => _currentIndex = 2);
+                    },
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 12),
 
-            // Daily Horoscope Card
-            const HoroscopeCard(),
+            // 3 Large Featured Story Cards (as in reference image)
+            FeaturedStoryCard(
+              title: "Vedic Astrology Guidance",
+              subtitle: "tells you about your destiny and life purpose",
+              backgroundColor: AppTheme.cardPurple,
+              assetName: 'card_vedic_art.png',
+              fallbackIcon: Icons.self_improvement,
+              onTap: () {
+                setState(() => _currentIndex = 1);
+              },
+            ),
+
+            FeaturedStoryCard(
+              title: "Subconscious Voice",
+              subtitle: "sheds light on the problems your inner mind is speaking about",
+              backgroundColor: AppTheme.cardLilac,
+              assetName: 'card_tarot_art.png',
+              fallbackIcon: Icons.menu_book_rounded,
+              onTap: () {
+                setState(() => _currentIndex = 1);
+              },
+            ),
+
+            FeaturedStoryCard(
+              title: "Cosmic Predictions",
+              subtitle: "tells you about upcoming planetary events and transits",
+              backgroundColor: AppTheme.cardCoral,
+              assetName: 'card_kundli_art.png',
+              fallbackIcon: Icons.public_rounded,
+              onTap: () {
+                setState(() => _currentIndex = 2);
+              },
+            ),
             const SizedBox(height: 16),
 
-            // Top Verified Astrologers
+            // Daily Horoscope Card
+            const HoroscopeCard(),
+            const SizedBox(height: 18),
+
+            // Top Verified Astrologers Section
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Top Verified Astrologers',
-                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Colors.white),
+                  const Text(
+                    'Top Astrologers',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.textWhite,
+                      letterSpacing: -0.2,
+                    ),
                   ),
                   TextButton(
                     onPressed: () => setState(() => _currentIndex = 1),
-                    child: Text('View All', style: TextStyle(color: theme.colorScheme.primary)),
+                    child: const Text(
+                      'View All',
+                      style: TextStyle(
+                        color: AppTheme.cardLilac,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
 
             if (appState.astrologers.isEmpty)
-              const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator()))
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(24),
+                  child: CircularProgressIndicator(color: AppTheme.cardPurple),
+                ),
+              )
             else
               ...appState.astrologers.map((astro) => AstrologerCard(astrologer: astro)),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 30),
           ],
         ),
       ),

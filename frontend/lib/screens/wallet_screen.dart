@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/theme/app_theme.dart';
 import '../providers/app_state.dart';
 
 class WalletScreen extends StatefulWidget {
@@ -29,36 +30,36 @@ class _WalletScreenState extends State<WalletScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final appState = context.watch<AppState>();
 
     return Scaffold(
+      backgroundColor: AppTheme.backgroundDark,
       appBar: AppBar(
-        title: const Text('My Astro Wallet'),
+        title: const Text('Astro Wallet'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Current Balance Golden Banner
+            // Current Balance Card with Sunset / Coral Gradient
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(22),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
+                gradient: const LinearGradient(
                   colors: [
-                    theme.colorScheme.primary.withAlpha(220),
-                    theme.colorScheme.secondary.withAlpha(200),
+                    AppTheme.cardPurple,
+                    AppTheme.cardCoral,
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: AppTheme.cardRadius,
                 boxShadow: [
                   BoxShadow(
-                    color: theme.colorScheme.primary.withAlpha(50),
-                    blurRadius: 16,
-                    offset: const Offset(0, 4),
+                    color: AppTheme.cardPurple.withAlpha(70),
+                    blurRadius: 18,
+                    offset: const Offset(0, 6),
                   ),
                 ],
               ),
@@ -67,22 +68,27 @@ class _WalletScreenState extends State<WalletScreen> {
                 children: [
                   const Text(
                     'Available Balance',
-                    style: TextStyle(color: Colors.black87, fontSize: 14, fontWeight: FontWeight.w600),
+                    style: TextStyle(color: Color(0xEEFFFFFF), fontSize: 13, fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 6),
                   Text(
                     '₹${appState.walletBalance.toStringAsFixed(2)}',
                     style: const TextStyle(
-                      color: Colors.black,
+                      color: Colors.white,
                       fontSize: 34,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w900,
                       letterSpacing: -0.5,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Use balance for Live Vedic consultations, Tarot sessions, and Kundli remedies.',
-                    style: TextStyle(color: Colors.black54, fontSize: 12),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    children: const [
+                      Text(
+                        'Direct per-minute deduction for verified Astrologer consultations and remedies.',
+                        style: TextStyle(color: Color(0xCCFFFFFF), fontSize: 12),
+                        softWrap: true,
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -90,10 +96,11 @@ class _WalletScreenState extends State<WalletScreen> {
             const SizedBox(height: 24),
 
             // Top-up Section
-            Text(
-              'Add Money to Wallet',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
+            const Text(
+              'Select Amount to Add',
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 16,
                 color: Colors.white,
               ),
             ),
@@ -108,11 +115,12 @@ class _WalletScreenState extends State<WalletScreen> {
                     margin: const EdgeInsets.symmetric(horizontal: 4),
                     child: OutlinedButton(
                       style: OutlinedButton.styleFrom(
-                        backgroundColor: isSelected ? theme.colorScheme.primary : theme.colorScheme.surface,
+                        backgroundColor: isSelected ? AppTheme.cardPurple : AppTheme.surfaceTile,
                         side: BorderSide(
-                          color: isSelected ? theme.colorScheme.primary : const Color(0x33FFB300),
+                          color: isSelected ? AppTheme.cardPurple : AppTheme.borderSubtle,
+                          width: 1.2,
                         ),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                       onPressed: () {
@@ -123,7 +131,7 @@ class _WalletScreenState extends State<WalletScreen> {
                       child: Text(
                         '₹${preset.toStringAsFixed(0)}',
                         style: TextStyle(
-                          color: isSelected ? Colors.black : Colors.white,
+                          color: isSelected ? Colors.white : AppTheme.textMuted,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -139,9 +147,9 @@ class _WalletScreenState extends State<WalletScreen> {
               controller: _amountController,
               keyboardType: TextInputType.number,
               style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 prefixText: '₹ ',
-                prefixStyle: TextStyle(color: theme.colorScheme.primary, fontSize: 18, fontWeight: FontWeight.bold),
+                prefixStyle: TextStyle(color: AppTheme.cardLilac, fontSize: 18, fontWeight: FontWeight.bold),
                 labelText: 'Enter Custom Amount',
               ),
             ),
@@ -158,8 +166,8 @@ class _WalletScreenState extends State<WalletScreen> {
                         if (!context.mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('Recharge of ₹${amount.toStringAsFixed(0)} successful!'),
-                            backgroundColor: Colors.green,
+                            content: Text('Recharge of ₹${amount.toStringAsFixed(0)} completed successfully.'),
+                            backgroundColor: AppTheme.cardPurple,
                           ),
                         );
                       }
@@ -168,65 +176,95 @@ class _WalletScreenState extends State<WalletScreen> {
                   ? const SizedBox(
                       height: 20,
                       width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                     )
-                  : const Text('Proceed to Add Money (Demo Instant)'),
+                  : const Text('Add Money to Wallet'),
             ),
             const SizedBox(height: 30),
 
             // Transaction History
-            Text(
-              'Recent Transactions',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
+            const Text(
+              'Transaction History',
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 16,
                 color: Colors.white,
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
 
             appState.transactions.isEmpty
-                ? const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 20),
-                    child: Center(
-                      child: Text('No transactions yet', style: TextStyle(color: Colors.white60)),
+                ? Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: AppTheme.surfaceDark,
+                      borderRadius: AppTheme.cardRadius,
+                      border: Border.all(color: AppTheme.borderSubtle),
+                    ),
+                    child: const Center(
+                      child: Text('No transactions recorded yet', style: TextStyle(color: AppTheme.textMuted)),
                     ),
                   )
                 : ListView.separated(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: appState.transactions.length,
-                    separatorBuilder: (_, _) => const Divider(color: Color(0x22FFFFFF)),
+                    separatorBuilder: (_, _) => const SizedBox(height: 8),
                     itemBuilder: (context, index) {
                       final tx = appState.transactions[index];
                       final isCredit = tx.type == 'recharge' || tx.type == 'promo_credit';
 
-                      return ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: CircleAvatar(
-                          backgroundColor: isCredit
-                              ? Colors.greenAccent.withAlpha(40)
-                              : Colors.redAccent.withAlpha(40),
-                          child: Icon(
-                            isCredit ? Icons.arrow_downward : Icons.arrow_upward,
-                            color: isCredit ? Colors.greenAccent : Colors.redAccent,
-                            size: 18,
-                          ),
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: AppTheme.surfaceDark,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: AppTheme.borderSubtle, width: 1),
                         ),
-                        title: Text(
-                          tx.description,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                        ),
-                        subtitle: Text(
-                          'Balance: ₹${tx.balanceAfter.toStringAsFixed(2)}',
-                          style: const TextStyle(color: Colors.white54, fontSize: 12),
-                        ),
-                        trailing: Text(
-                          '${isCredit ? '+' : ''}₹${tx.amount.abs().toStringAsFixed(2)}',
-                          style: TextStyle(
-                            color: isCredit ? Colors.greenAccent : Colors.redAccent,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
-                          ),
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 18,
+                              backgroundColor: isCredit
+                                  ? AppTheme.accentCyan.withAlpha(30)
+                                  : Colors.redAccent.withAlpha(30),
+                              child: Icon(
+                                isCredit ? Icons.arrow_downward : Icons.arrow_upward,
+                                color: isCredit ? AppTheme.accentCyan : Colors.redAccent,
+                                size: 16,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Wrap(
+                                    children: [
+                                      Text(
+                                        tx.description,
+                                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Colors.white),
+                                        softWrap: true,
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Balance: ₹${tx.balanceAfter.toStringAsFixed(2)}',
+                                    style: const TextStyle(color: AppTheme.textMuted, fontSize: 11),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Text(
+                              '${isCredit ? '+' : ''}₹${tx.amount.abs().toStringAsFixed(2)}',
+                              style: TextStyle(
+                                color: isCredit ? AppTheme.accentCyan : Colors.redAccent,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
                         ),
                       );
                     },

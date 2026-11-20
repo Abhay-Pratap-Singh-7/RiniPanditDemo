@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/theme/app_theme.dart';
 import '../models/astrologer.dart';
 import '../providers/app_state.dart';
 import '../screens/chat_consultation_screen.dart';
@@ -14,145 +15,184 @@ class AstrologerCard extends StatelessWidget {
     final theme = Theme.of(context);
     final appState = context.read<AppState>();
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(14.0),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Avatar with Online Status Indicator
-            Stack(
-              children: [
-                CircleAvatar(
-                  radius: 36,
-                  backgroundColor: theme.colorScheme.primary.withAlpha(50),
-                  backgroundImage: astrologer.avatarUrl.isNotEmpty
-                      ? NetworkImage(astrologer.avatarUrl)
-                      : null,
-                  child: astrologer.avatarUrl.isEmpty
-                      ? Icon(Icons.person, size: 36, color: theme.colorScheme.primary)
-                      : null,
-                ),
-                Positioned(
-                  bottom: 2,
-                  right: 2,
-                  child: Container(
-                    width: 14,
-                    height: 14,
-                    decoration: BoxDecoration(
-                      color: astrologer.isOnline ? Colors.greenAccent : Colors.grey,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: theme.scaffoldBackgroundColor, width: 2),
-                    ),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(16.0),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceDark,
+        borderRadius: AppTheme.cardRadius,
+        border: Border.all(color: AppTheme.borderSubtle, width: 1.2),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Avatar with Online Status
+          Stack(
+            children: [
+              CircleAvatar(
+                radius: 34,
+                backgroundColor: AppTheme.cardPurple.withAlpha(40),
+                backgroundImage: astrologer.avatarUrl.isNotEmpty
+                    ? NetworkImage(astrologer.avatarUrl)
+                    : null,
+                child: astrologer.avatarUrl.isEmpty
+                    ? const Icon(Icons.person, size: 32, color: AppTheme.cardLilac)
+                    : null,
+              ),
+              Positioned(
+                bottom: 2,
+                right: 2,
+                child: Container(
+                  width: 14,
+                  height: 14,
+                  decoration: BoxDecoration(
+                    color: astrologer.isOnline ? AppTheme.accentCyan : Colors.grey,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppTheme.surfaceDark, width: 2),
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(width: 14),
+              ),
+            ],
+          ),
+          const SizedBox(width: 14),
 
-            // Details
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          astrologer.displayName,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      Row(
+          // Details Column
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Wrap(
                         children: [
-                          const Icon(Icons.star, color: Colors.amber, size: 16),
-                          const SizedBox(width: 2),
                           Text(
-                            astrologer.rating.toStringAsFixed(1),
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                            astrologer.displayName,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.textWhite,
+                            ),
+                            softWrap: true,
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-
-                  // Specialties
-                  Text(
-                    astrologer.specialties.join(' • '),
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: theme.colorScheme.primary,
-                      fontWeight: FontWeight.w500,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 2),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: AppTheme.surfaceTile,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.star, color: Colors.amber, size: 14),
+                          const SizedBox(width: 3),
+                          Text(
+                            astrologer.rating.toStringAsFixed(1),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                              color: AppTheme.textWhite,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
 
-                  // Languages & Exp
-                  Text(
-                    '${astrologer.languages.join(", ")} | ${astrologer.experienceYears}+ yrs',
-                    style: TextStyle(fontSize: 12, color: theme.textTheme.bodyMedium?.color?.withAlpha(180)),
-                  ),
-                  const SizedBox(height: 8),
-
-                  // Price & Action Button
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '₹${astrologer.ratePerMinute.toStringAsFixed(0)}/min',
+                // Wrapped Specialties
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: astrologer.specialties.take(3).map((spec) {
+                    return Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: AppTheme.cardPurple.withAlpha(35),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        spec,
                         style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          fontSize: 11,
+                          color: AppTheme.textPurpleLight,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                        icon: const Icon(Icons.chat_bubble_outline, size: 16),
-                        label: const Text('Chat', style: TextStyle(fontSize: 13)),
-                        onPressed: () {
-                          if (appState.walletBalance < astrologer.ratePerMinute) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Minimum balance of ₹${astrologer.ratePerMinute.toStringAsFixed(0)} required. Please recharge wallet.',
-                                ),
-                                backgroundColor: theme.colorScheme.error,
-                              ),
-                            );
-                            return;
-                          }
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 8),
 
-                          appState.startConsultation(astrologer.id);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => ChatConsultationScreen(astrologer: astrologer),
+                // Experience & Language
+                Wrap(
+                  children: [
+                    Text(
+                      '${astrologer.languages.join(", ")} • ${astrologer.experienceYears}+ years exp',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.textMuted,
+                      ),
+                      softWrap: true,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Rate & Action Button
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '₹${astrologer.ratePerMinute.toStringAsFixed(0)} / min',
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: AppTheme.textWhite,
+                      ),
+                    ),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.cardPurple,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      icon: const Icon(Icons.chat_bubble_outline, size: 15, color: Colors.white),
+                      label: const Text('Consult', style: TextStyle(fontSize: 13, color: Colors.white)),
+                      onPressed: () {
+                        if (appState.walletBalance < astrologer.ratePerMinute) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Minimum balance of ₹${astrologer.ratePerMinute.toStringAsFixed(0)} required to start consultation.',
+                              ),
+                              backgroundColor: theme.colorScheme.error,
                             ),
                           );
-                        },
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                          return;
+                        }
+
+                        appState.startConsultation(astrologer.id);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ChatConsultationScreen(astrologer: astrologer),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

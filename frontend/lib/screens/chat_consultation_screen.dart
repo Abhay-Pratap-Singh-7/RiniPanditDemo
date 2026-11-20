@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/theme/app_theme.dart';
 import '../models/astrologer.dart';
 import '../providers/app_state.dart';
 
@@ -43,47 +44,56 @@ class _ChatConsultationScreenState extends State<ChatConsultationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final appState = context.watch<AppState>();
     final messages = appState.messages;
 
     _scrollToBottom();
 
     return Scaffold(
+      backgroundColor: AppTheme.backgroundDark,
       appBar: AppBar(
         titleSpacing: 0,
+        backgroundColor: AppTheme.surfaceDark,
         title: Row(
           children: [
             CircleAvatar(
               radius: 18,
+              backgroundColor: AppTheme.cardPurple.withAlpha(50),
               backgroundImage: widget.astrologer.avatarUrl.isNotEmpty
                   ? NetworkImage(widget.astrologer.avatarUrl)
                   : null,
-              child: widget.astrologer.avatarUrl.isEmpty ? const Icon(Icons.person) : null,
+              child: widget.astrologer.avatarUrl.isEmpty
+                  ? const Icon(Icons.person, size: 20, color: AppTheme.cardLilac)
+                  : null,
             ),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    widget.astrologer.displayName,
-                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                  Wrap(
+                    children: [
+                      Text(
+                        widget.astrologer.displayName,
+                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
+                        softWrap: true,
+                      ),
+                    ],
                   ),
                   Row(
                     children: [
                       Container(
-                        width: 8,
-                        height: 8,
+                        width: 7,
+                        height: 7,
                         decoration: const BoxDecoration(
-                          color: Colors.greenAccent,
+                          color: AppTheme.accentCyan,
                           shape: BoxShape.circle,
                         ),
                       ),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: 5),
                       Text(
-                        'Live • ₹${widget.astrologer.ratePerMinute.toStringAsFixed(0)}/min',
-                        style: TextStyle(fontSize: 12, color: theme.colorScheme.primary),
+                        'Live Consultation • ₹${widget.astrologer.ratePerMinute.toStringAsFixed(0)}/min',
+                        style: const TextStyle(fontSize: 11, color: AppTheme.cardLilac),
                       ),
                     ],
                   ),
@@ -97,17 +107,17 @@ class _ChatConsultationScreenState extends State<ChatConsultationScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
+              color: AppTheme.surfaceTile,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: theme.colorScheme.primary.withAlpha(100)),
+              border: Border.all(color: AppTheme.borderSubtle),
             ),
             child: Row(
               children: [
-                Icon(Icons.timer, color: theme.colorScheme.primary, size: 16),
+                const Icon(Icons.timer_outlined, color: AppTheme.cardLilac, size: 15),
                 const SizedBox(width: 4),
                 Text(
                   _formatTimer(appState.activeSessionElapsedSeconds),
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
                 ),
               ],
             ),
@@ -122,13 +132,16 @@ class _ChatConsultationScreenState extends State<ChatConsultationScreen> {
               showDialog(
                 context: context,
                 builder: (ctx) => AlertDialog(
-                  title: const Text('End Consultation?'),
+                  backgroundColor: AppTheme.surfaceDark,
+                  shape: RoundedRectangleBorder(borderRadius: AppTheme.cardRadius),
+                  title: const Text('End Consultation', style: TextStyle(color: Colors.white)),
                   content: Text(
                     'Are you sure you want to end this live session with ${widget.astrologer.displayName}?',
+                    style: const TextStyle(color: AppTheme.textMuted),
                   ),
                   actions: [
                     TextButton(
-                      child: const Text('Cancel'),
+                      child: const Text('Cancel', style: TextStyle(color: AppTheme.cardLilac)),
                       onPressed: () => Navigator.pop(ctx),
                     ),
                     ElevatedButton(
@@ -152,28 +165,35 @@ class _ChatConsultationScreenState extends State<ChatConsultationScreen> {
         children: [
           // Real-time Billing & Wallet Ticker Banner
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            color: theme.colorScheme.surface,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            color: AppTheme.surfaceTile,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Row(
                   children: [
-                    Icon(Icons.account_balance_wallet, size: 16, color: theme.colorScheme.primary),
-                    const SizedBox(width: 6),
+                    const Icon(Icons.account_balance_wallet_outlined, size: 16, color: AppTheme.cardLilac),
+                    const SizedBox(width: 8),
                     Text(
-                      'Balance: ₹${appState.walletBalance.toStringAsFixed(0)}',
+                      'Wallet Balance: ₹${appState.walletBalance.toStringAsFixed(0)}',
                       style: TextStyle(
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w700,
                         fontSize: 13,
                         color: appState.walletBalance < 50 ? Colors.redAccent : Colors.white,
                       ),
                     ),
                   ],
                 ),
-                Text(
-                  'Billed Every 60s',
-                  style: TextStyle(fontSize: 12, color: theme.colorScheme.primary),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: AppTheme.cardPurple.withAlpha(40),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    'Billed Every 60s',
+                    style: TextStyle(fontSize: 11, color: AppTheme.cardLilac, fontWeight: FontWeight.w500),
+                  ),
                 ),
               ],
             ),
@@ -186,11 +206,16 @@ class _ChatConsultationScreenState extends State<ChatConsultationScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const CircularProgressIndicator(),
+                        const CircularProgressIndicator(color: AppTheme.cardPurple),
                         const SizedBox(height: 16),
-                        Text(
-                          'Connecting with ${widget.astrologer.displayName}...',
-                          style: const TextStyle(color: Colors.white70),
+                        Wrap(
+                          children: [
+                            Text(
+                              'Connecting with ${widget.astrologer.displayName}...',
+                              style: const TextStyle(color: AppTheme.textMuted),
+                              softWrap: true,
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -206,29 +231,38 @@ class _ChatConsultationScreenState extends State<ChatConsultationScreen> {
                       return Align(
                         alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
                         child: Container(
-                          margin: const EdgeInsets.symmetric(vertical: 4),
+                          margin: const EdgeInsets.symmetric(vertical: 5),
                           constraints: BoxConstraints(
-                            maxWidth: MediaQuery.of(context).size.width * 0.75,
+                            maxWidth: MediaQuery.of(context).size.width * 0.78,
                           ),
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           decoration: BoxDecoration(
                             color: isUser
-                                ? theme.colorScheme.primary
-                                : theme.colorScheme.surface,
+                                ? AppTheme.cardPurple
+                                : AppTheme.surfaceDark,
                             borderRadius: BorderRadius.only(
-                              topLeft: const Radius.circular(16),
-                              topRight: const Radius.circular(16),
-                              bottomLeft: isUser ? const Radius.circular(16) : Radius.zero,
-                              bottomRight: isUser ? Radius.zero : const Radius.circular(16),
+                              topLeft: const Radius.circular(20),
+                              topRight: const Radius.circular(20),
+                              bottomLeft: isUser ? const Radius.circular(20) : Radius.zero,
+                              bottomRight: isUser ? Radius.zero : const Radius.circular(20),
+                            ),
+                            border: Border.all(
+                              color: isUser ? Colors.transparent : AppTheme.borderSubtle,
+                              width: 1,
                             ),
                           ),
-                          child: Text(
-                            msg.content,
-                            style: TextStyle(
-                              color: isUser ? Colors.black : Colors.white,
-                              fontSize: 14,
-                              height: 1.3,
-                            ),
+                          child: Wrap(
+                            children: [
+                              Text(
+                                msg.content,
+                                style: TextStyle(
+                                  color: isUser ? Colors.white : const Color(0xFFF0F3F8),
+                                  fontSize: 14,
+                                  height: 1.35,
+                                ),
+                                softWrap: true,
+                              ),
+                            ],
                           ),
                         ),
                       );
@@ -239,9 +273,9 @@ class _ChatConsultationScreenState extends State<ChatConsultationScreen> {
           // Chat Input Bar
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: theme.scaffoldBackgroundColor,
-              border: Border(top: BorderSide(color: theme.colorScheme.surface, width: 1)),
+            decoration: const BoxDecoration(
+              color: AppTheme.surfaceDark,
+              border: Border(top: BorderSide(color: AppTheme.borderSubtle, width: 1)),
             ),
             child: SafeArea(
               child: Row(
@@ -251,14 +285,14 @@ class _ChatConsultationScreenState extends State<ChatConsultationScreen> {
                       controller: _textController,
                       style: const TextStyle(color: Colors.white),
                       decoration: InputDecoration(
-                        hintText: 'Type your question (Kundli, career, love)...',
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        hintText: 'Ask about Kundli, career, relationships...',
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(24),
                           borderSide: BorderSide.none,
                         ),
                         filled: true,
-                        fillColor: theme.colorScheme.surface,
+                        fillColor: AppTheme.surfaceTile,
                       ),
                       onSubmitted: (val) {
                         if (val.trim().isNotEmpty) {
@@ -270,9 +304,9 @@ class _ChatConsultationScreenState extends State<ChatConsultationScreen> {
                   ),
                   const SizedBox(width: 8),
                   CircleAvatar(
-                    backgroundColor: theme.colorScheme.primary,
+                    backgroundColor: AppTheme.cardPurple,
                     child: IconButton(
-                      icon: const Icon(Icons.send, color: Colors.black, size: 20),
+                      icon: const Icon(Icons.send, color: Colors.white, size: 18),
                       onPressed: () {
                         if (_textController.text.trim().isNotEmpty) {
                           appState.sendChatMessage(_textController.text);

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/theme/app_theme.dart';
 import '../providers/app_state.dart';
 import '../widgets/astrologer_card.dart';
 import '../widgets/app_header.dart';
@@ -27,7 +28,6 @@ class _AstrologerListScreenState extends State<AstrologerListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final appState = context.watch<AppState>();
 
     final filtered = _selectedCategory == 'All'
@@ -38,6 +38,7 @@ class _AstrologerListScreenState extends State<AstrologerListScreen> {
             .toList();
 
     return Scaffold(
+      backgroundColor: AppTheme.backgroundDark,
       appBar: const AppHeader(title: 'Astrologer Marketplace'),
       body: Column(
         children: [
@@ -53,18 +54,31 @@ class _AstrologerListScreenState extends State<AstrologerListScreen> {
                 final cat = _categories[index];
                 final isSelected = cat == _selectedCategory;
 
-                return FilterChip(
-                  label: Text(cat),
-                  selected: isSelected,
-                  selectedColor: theme.colorScheme.primary,
-                  labelStyle: TextStyle(
-                    color: isSelected ? Colors.black : Colors.white70,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                    fontSize: 13,
-                  ),
-                  onSelected: (val) {
+                return GestureDetector(
+                  onTap: () {
                     setState(() => _selectedCategory = cat);
                   },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isSelected ? AppTheme.cardPurple : AppTheme.surfaceTile,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isSelected ? AppTheme.cardPurple : AppTheme.borderSubtle,
+                        width: 1,
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        cat,
+                        style: TextStyle(
+                          color: isSelected ? Colors.white : AppTheme.textMuted,
+                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ),
                 );
               },
             ),
@@ -74,10 +88,10 @@ class _AstrologerListScreenState extends State<AstrologerListScreen> {
           Expanded(
             child: filtered.isEmpty
                 ? const Center(
-                    child: Text('No astrologers found in this category', style: TextStyle(color: Colors.white70)),
+                    child: Text('No astrologers found in this category', style: TextStyle(color: AppTheme.textMuted)),
                   )
                 : ListView.builder(
-                    padding: const EdgeInsets.only(bottom: 20),
+                    padding: const EdgeInsets.only(bottom: 20, top: 4),
                     itemCount: filtered.length,
                     itemBuilder: (context, index) => AstrologerCard(astrologer: filtered[index]),
                   ),
