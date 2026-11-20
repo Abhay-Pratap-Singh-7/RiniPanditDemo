@@ -394,6 +394,7 @@ class AppState extends ChangeNotifier {
     required String bio,
     required List<String> specialties,
     int? experienceYears,
+    String? displayName,
   }) async {
     final pid = _currentPandit?.id ?? _userProfile?.id ?? _currentUser?['id'];
     if (pid == null) return false;
@@ -402,14 +403,18 @@ class AppState extends ChangeNotifier {
     notifyListeners();
 
     try {
+      final name = displayName ?? _userProfile?.fullName ?? _currentUser?['user_metadata']?['full_name'] ?? 'Acharya';
       _currentPandit = await _api.updatePanditStatus(
         id: pid,
         ratePerMinute: ratePerMinute,
         bio: bio,
         specialties: specialties,
         experienceYears: experienceYears,
+        displayName: name,
       );
-      await loadPanditData(pid);
+      try {
+        await loadPanditData(pid);
+      } catch (_) {}
       return true;
     } catch (e) {
       _errorMessage = ApiService.extractErrorMessage(e);

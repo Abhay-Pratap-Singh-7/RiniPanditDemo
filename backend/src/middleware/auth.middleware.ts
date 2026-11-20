@@ -7,6 +7,7 @@ export interface AuthenticatedUser {
   email?: string;
   phone?: string;
   role?: string;
+  user_metadata?: Record<string, any>;
 }
 
 export interface AuthRequest extends Request {
@@ -38,6 +39,7 @@ export async function authenticate(req: AuthRequest, res: Response, next: NextFu
             email: data.user.email,
             phone: profile?.phone,
             role: (data.user.user_metadata?.role as string) || 'user',
+            user_metadata: data.user.user_metadata,
           };
           return next();
         }

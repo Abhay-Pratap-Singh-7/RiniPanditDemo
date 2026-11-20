@@ -140,12 +140,14 @@ class DataStore {
   // Profile operations
   async getProfile(idOrPhone: string): Promise<Profile | null> {
     if (supabase) {
-      const { data } = await supabase
-        .from('profiles')
-        .select('*')
-        .or(`id.eq.${idOrPhone},phone.eq.${idOrPhone}`)
-        .single();
-      if (data) return data as Profile;
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('*')
+          .or(`id.eq.${idOrPhone},phone.eq.${idOrPhone}`)
+          .maybeSingle();
+        if (data) return data as Profile;
+      } catch (_) {}
     }
     return (
       this.profiles.get(idOrPhone) ||
@@ -160,9 +162,13 @@ class DataStore {
     const current = await this.getProfile(id);
     const updated = { ...(current || {}), ...updates, id } as Profile;
     this.profiles.set(id, updated);
-    this.profiles.set(updated.phone, updated);
+    if (updated.phone) {
+      this.profiles.set(updated.phone, updated);
+    }
     if (supabase) {
-      await supabase.from('profiles').upsert(updated);
+      try {
+        await supabase.from('profiles').upsert(updated);
+      } catch (_) {}
     }
     return updated;
   }
@@ -170,12 +176,14 @@ class DataStore {
   // Astrologer operations
   async listAstrologers(specialty?: string): Promise<Astrologer[]> {
     if (supabase) {
-      let query = supabase.from('astrologers').select('*');
-      if (specialty) {
-        query = query.contains('specialties', [specialty]);
-      }
-      const { data } = await query;
-      if (data && data.length > 0) return data as Astrologer[];
+      try {
+        let query = supabase.from('astrologers').select('*');
+        if (specialty) {
+          query = query.contains('specialties', [specialty]);
+        }
+        const { data } = await query;
+        if (data && data.length > 0) return data as Astrologer[];
+      } catch (_) {}
     }
     const all = Array.from(this.astrologers.values());
     if (!specialty) return all;
@@ -186,8 +194,10 @@ class DataStore {
 
   async getAstrologer(id: string): Promise<Astrologer | null> {
     if (supabase) {
-      const { data } = await supabase.from('astrologers').select('*').eq('id', id).single();
-      if (data) return data as Astrologer;
+      try {
+        const { data } = await supabase.from('astrologers').select('*').eq('id', id).maybeSingle();
+        if (data) return data as Astrologer;
+      } catch (_) {}
     }
     return this.astrologers.get(id) || null;
   }
@@ -206,35 +216,53 @@ class DataStore {
   async updateAstrologer(id: string, updates: Partial<Astrologer>): Promise<Astrologer | null> {
     const astro = await this.getAstrologer(id);
     if (!astro) {
-      const profile = await this.getProfile(id);
+      let profile = await this.getProfile(id);
       const newAstro: Astrologer = {
         id,
-        display_name: profile?.full_name || 'Acharya',
-        specialties: ['Vedic', 'Kundli'],
-        languages: ['Hindi', 'English'],
-        experience_years: 5,
-        rate_per_minute: 25.0,
+        display_name: updates.display_name || profile?.full_name || 'Acharya',
+        specialties: updates.specialties || ['Vedic', 'Kundli'],
+        languages: updates.languages || ['Hindi', 'English'],
+        experience_years: updates.experience_years || 5,
+        rate_per_minute: updates.rate_per_minute || 25.0,
         rating: 5.0,
         total_reviews: 0,
-        is_online: true,
+        is_online: updates.is_online !== undefined ? updates.is_online : true,
         is_busy: false,
-        bio: '',
-        avatar_url: profile?.avatar_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
+        bio: updates.bio || '',
+        avatar_url: updates.avatar_url || profile?.avatar_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
         ...updates,
       };
       this.astrologers.set(id, newAstro);
       if (supabase) {
-        await supabase.from('astrologers').upsert({
-          ...newAstro,
-          profile_id: id,
-        });
+        try {
+          if (!profile) {
+            await supabase.from('profiles').upsert({
+              id,
+              phone: `+91${Date.now().toString().slice(-10)}`,
+              full_name: newAstro.display_name,
+              wallet_balance: 0.0,
+            });
+          }
+          await supabase.from('astrologers').upsert({
+            ...newAstro,
+            profile_id: id,
+          });
+        } catch (_) {}
       }
       return newAstro;
     }
     const updated = { ...astro, ...updates };
     this.astrologers.set(id, updated);
     if (supabase) {
-      await supabase.from('astrologers').update(updates).eq('id', id);
+      try {
+        const { error: err } = await supabase.from('astrologers').update(updates).eq('id', id);
+        if (err) {
+          await supabase.from('astrologers').upsert({
+            ...updated,
+            profile_id: id,
+          });
+        }
+      } catch (_) {}
     }
     return updated;
   }

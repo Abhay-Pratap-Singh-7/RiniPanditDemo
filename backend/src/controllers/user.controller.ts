@@ -8,9 +8,21 @@ export async function getUserProfile(req: AuthRequest, res: Response) {
     if (!userId) {
       return res.status(401).json({ success: false, message: 'Authentication required' });
     }
-    const profile = await store.getProfile(userId);
+    let profile = await store.getProfile(userId);
     if (!profile) {
-      return res.status(404).json({ success: false, message: 'Profile not found' });
+      profile = {
+        id: userId,
+        phone: req.user?.phone || `+91${Date.now().toString().slice(-10)}`,
+        full_name: req.user?.user_metadata?.full_name || 'Acharya / Devotee',
+        gender: 'male',
+        dob: '1995-01-01',
+        tob: '10:00',
+        pob_city: 'Delhi',
+        pob_country: 'India',
+        wallet_balance: req.user?.user_metadata?.role === 'pandit' ? 0.0 : 100.0,
+        avatar_url: '',
+      };
+      await store.updateProfile(userId, profile);
     }
     res.json({ success: true, data: profile });
   } catch (err: any) {

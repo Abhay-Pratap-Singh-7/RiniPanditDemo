@@ -95,10 +95,17 @@ class _AuthScreenState extends State<AuthScreen> {
           MaterialPageRoute(builder: (_) => const PanditProfileSetupScreen()),
         );
       } else if (appState.isPandit) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const PanditDashboardScreen()),
-        );
+        if (appState.currentPandit == null || (appState.currentPandit?.bio.isEmpty ?? true)) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const PanditProfileSetupScreen()),
+          );
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const PanditDashboardScreen()),
+          );
+        }
       } else {
         Navigator.pushReplacement(
           context,

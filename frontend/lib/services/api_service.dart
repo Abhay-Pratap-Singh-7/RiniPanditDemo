@@ -333,12 +333,14 @@ class ApiService {
       '/user/profile',
       queryParameters: userId != null ? {'userId': userId} : null,
     );
-    return UserProfile.fromJson(response.data['data']);
+    final data = response.data['data'];
+    return UserProfile.fromJson(data is Map<String, dynamic> ? data : null);
   }
 
   Future<UserProfile> updateUserProfile(Map<String, dynamic> data) async {
     final response = await _dio.put('/user/profile', data: data);
-    return UserProfile.fromJson(response.data['data']);
+    final resData = response.data['data'];
+    return UserProfile.fromJson(resData is Map<String, dynamic> ? resData : null);
   }
 
   // ==========================================
@@ -378,6 +380,7 @@ class ApiService {
     String? bio,
     List<String>? specialties,
     int? experienceYears,
+    String? displayName,
   }) async {
     final Map<String, dynamic> body = {'id': id};
     if (isOnline != null) body['isOnline'] = isOnline;
@@ -386,6 +389,7 @@ class ApiService {
     if (bio != null) body['bio'] = bio;
     if (specialties != null) body['specialties'] = specialties;
     if (experienceYears != null) body['experienceYears'] = experienceYears;
+    if (displayName != null) body['displayName'] = displayName;
     final response = await _dio.put('/pandit/status', data: body);
     final data = response.data['data'];
     if (data is Map<String, dynamic>) {
@@ -393,7 +397,7 @@ class ApiService {
     }
     return Astrologer(
       id: id,
-      displayName: 'Acharya',
+      displayName: displayName ?? 'Acharya',
       specialties: specialties ?? const ['Vedic', 'Kundli'],
       languages: const ['Hindi', 'English'],
       experienceYears: experienceYears ?? 5,

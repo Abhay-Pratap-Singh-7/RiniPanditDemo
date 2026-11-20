@@ -6,6 +6,7 @@ import '../../widgets/cosmic_scaffold.dart';
 import '../profile_screen.dart';
 import 'pandit_chat_screen.dart';
 import 'pandit_earnings_screen.dart';
+import 'pandit_profile_setup_screen.dart';
 
 class PanditDashboardScreen extends StatefulWidget {
   const PanditDashboardScreen({super.key});
@@ -18,9 +19,71 @@ class _PanditDashboardScreenState extends State<PanditDashboardScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<AppState>().loadPanditData();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final appState = context.read<AppState>();
+      await appState.loadPanditData();
+      if (!mounted) return;
+      _checkProfileIncomplete(appState);
     });
+  }
+
+  void _checkProfileIncomplete(AppState appState) {
+    final pandit = appState.currentPandit;
+    if (pandit == null || pandit.bio.isEmpty) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: AppTheme.surfaceDark,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: const BorderSide(color: AppTheme.borderSubtle, width: 1.2),
+          ),
+          title: Row(
+            children: const [
+              Icon(Icons.assignment_late_outlined, color: AppTheme.cardCoral, size: 24),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Complete Your Profile',
+                  style: TextStyle(
+                    color: AppTheme.textWhite,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: const Text(
+            'Your astrologer profile is not configured yet. Please set your consultation rate, specialties, and bio to start receiving consultations.',
+            style: TextStyle(color: AppTheme.textMuted, fontSize: 13, height: 1.4),
+            softWrap: true,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Later', style: TextStyle(color: AppTheme.textMuted)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.cardPurple,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: () {
+                Navigator.pop(ctx);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const PanditProfileSetupScreen()),
+                );
+              },
+              child: const Text('Complete Profile', style: TextStyle(fontWeight: FontWeight.w700)),
+            ),
+          ],
+        ),
+      );
+    }
   }
 
   @override
@@ -158,6 +221,61 @@ class _PanditDashboardScreenState extends State<PanditDashboardScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // Incomplete Profile Alert Banner
+              if (pandit == null || pandit.bio.isEmpty) ...[
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppTheme.cardCoral.withAlpha(25),
+                    borderRadius: AppTheme.cardRadius,
+                    border: Border.all(color: AppTheme.cardCoral.withAlpha(90), width: 1.2),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.info_outline, color: AppTheme.cardCoral, size: 28),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: const [
+                            Text(
+                              'Profile Setup Incomplete',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: AppTheme.textWhite,
+                              ),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              'Set your rate and specialties to start receiving consultations.',
+                              style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                              softWrap: true,
+                            ),
+                          ],
+                        ),
+                      ),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.cardCoral,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const PanditProfileSetupScreen()),
+                          );
+                        },
+                        child: const Text('Setup', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+
               // Pandit Profile & Online Switch Card
               Container(
                 padding: const EdgeInsets.all(18),
