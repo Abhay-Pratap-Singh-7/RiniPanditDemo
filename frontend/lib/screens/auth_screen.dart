@@ -185,64 +185,66 @@ class _AuthScreenState extends State<AuthScreen> {
                 ),
                 const SizedBox(height: 26),
 
-                // Role Selector Tabs (Client vs Pandit)
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: AppTheme.surfaceDark,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: AppTheme.borderSubtle, width: 1),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () => setState(() => _role = 'user'),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            decoration: BoxDecoration(
-                              color: _role == 'user' ? AppTheme.cardPurple : Colors.transparent,
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Center(
-                              child: Text(
-                                'Client / Devotee',
-                                style: TextStyle(
-                                  color: _role == 'user' ? Colors.white : AppTheme.textMuted,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 13,
+                // Role Selector Tabs (Client vs Pandit) - Only on Sign Up
+                if (_isSignUp) ...[
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: AppTheme.surfaceDark,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: AppTheme.borderSubtle, width: 1),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => setState(() => _role = 'user'),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              decoration: BoxDecoration(
+                                color: _role == 'user' ? AppTheme.cardPurple : Colors.transparent,
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  'Client / Devotee',
+                                  style: TextStyle(
+                                    color: _role == 'user' ? Colors.white : AppTheme.textMuted,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 13,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () => setState(() => _role = 'pandit'),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            decoration: BoxDecoration(
-                              color: _role == 'pandit' ? AppTheme.cardPurple : Colors.transparent,
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Center(
-                              child: Text(
-                                'Acharya / Pandit',
-                                style: TextStyle(
-                                  color: _role == 'pandit' ? Colors.white : AppTheme.textMuted,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 13,
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => setState(() => _role = 'pandit'),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              decoration: BoxDecoration(
+                                color: _role == 'pandit' ? AppTheme.cardPurple : Colors.transparent,
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  'Acharya / Pandit',
+                                  style: TextStyle(
+                                    color: _role == 'pandit' ? Colors.white : AppTheme.textMuted,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 13,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 20),
+                  const SizedBox(height: 20),
+                ],
 
                 // Form Container Card
                 Container(

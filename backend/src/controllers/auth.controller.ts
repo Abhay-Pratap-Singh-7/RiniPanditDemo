@@ -216,6 +216,7 @@ export async function signIn(req: Request, res: Response) {
     let accessToken: string = '';
     let refreshToken: string = '';
     let detectedEmail: string = email;
+    let detectedRole: string = 'user';
 
     // 1. Supabase Authentication
     if (supabase) {
@@ -239,6 +240,7 @@ export async function signIn(req: Request, res: Response) {
       accessToken = signInData.session?.access_token || '';
       refreshToken = signInData.session?.refresh_token || '';
       detectedEmail = signInData.user.email || email;
+      detectedRole = signInData.user.user_metadata?.role || 'user';
     } else {
       const profile = await store.getProfile(email);
       if (!profile) {
@@ -256,7 +258,7 @@ export async function signIn(req: Request, res: Response) {
 
     // 3. Determine Role & Astrologer record
     const astrologer = await store.getAstrologer(authUserId);
-    const role = astrologer ? 'pandit' : 'user';
+    const role = detectedRole === 'pandit' || astrologer ? 'pandit' : 'user';
 
     return res.json({
       success: true,
@@ -276,7 +278,7 @@ export async function signIn(req: Request, res: Response) {
   } catch (err: any) {
     return res.status(500).json({
       success: false,
-      error: err.message || 'Internal server error during login.',
+      message: err.message || 'Internal server error during login.',
     });
   }
 }

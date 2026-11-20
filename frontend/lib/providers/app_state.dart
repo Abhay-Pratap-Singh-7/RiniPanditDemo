@@ -267,7 +267,12 @@ class AppState extends ChangeNotifier {
         _authToken = res['token'] as String?;
         _isAuthenticated = true;
         _currentUser = res['user'] as Map<String, dynamic>?;
-        _currentRole = (res['role'] as String?) ?? 'user';
+
+        final role = (res['role'] as String?) ??
+            (res['user']?['role'] as String?) ??
+            (res['user']?['user_metadata']?['role'] as String?) ??
+            (res['astrologer'] != null ? 'pandit' : 'user');
+        _currentRole = role;
 
         if (res['profile'] != null) {
           _userProfile = UserProfile.fromJson(res['profile']);
@@ -282,7 +287,7 @@ class AppState extends ChangeNotifier {
 
         await loadProfile();
         if (isPandit) {
-          await loadPanditData(_currentPandit?.id);
+          await loadPanditData(_currentPandit?.id ?? _userProfile?.id);
         }
         return true;
       } else {
