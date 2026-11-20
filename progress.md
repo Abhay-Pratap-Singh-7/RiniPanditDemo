@@ -18,31 +18,31 @@
 ---
 
 ## 2. Express.js Backend Architecture
-- [ ] **2.1 Project Setup & Configuration**
-  - [ ] Initialize Node.js + TypeScript environment (`package.json`, `tsconfig.json`)
-  - [ ] Install dependencies (`express`, `ws`, `@supabase/supabase-js`, `zod`, `dotenv`, `cors`)
-  - [ ] Configure Supabase Service Role client and environment loader
-- [ ] **2.2 Middleware & Security**
-  - [ ] JWT / Supabase Auth validation middleware
-  - [ ] Error handler and request validation middleware
-- [ ] **2.3 REST Endpoints**
-  - [ ] `POST /api/auth/verify-token` — User session sync
-  - [ ] `GET /api/user/profile` & `PUT /api/user/profile` — Fetch/update birth details & balance
-  - [ ] `GET /api/astrologers` & `GET /api/astrologers/:id` — Listing with filters & detail view
-  - [ ] `GET /api/wallet/balance` & `POST /api/wallet/recharge` — Mock wallet top-up & balance check
-  - [ ] `GET /api/wallet/transactions` — Transaction history
-  - [ ] `GET /api/consultations/history` & `GET /api/consultations/:id/messages` — Session & chat logs
-  - [ ] `GET /api/astrology/horoscope` — Daily zodiac horoscope predictions
-  - [ ] `POST /api/astrology/kundli` — Basic planetary & ascendant calculation engine
-- [ ] **2.4 WebSocket & Realtime Engine**
-  - [ ] Setup WebSocket server (`ws`) attached to HTTP server instance
-  - [ ] Client connection authentication and `userId -> WebSocket` session registry
-  - [ ] Event handler: `consultation:initiate` (with minimum balance validation)
-  - [ ] Event handler: `consultation:accept` and `consultation:started`
-  - [ ] Real-time per-minute billing worker (atomic wallet debit every 60s)
-  - [ ] Insufficient balance detection and automatic session termination
-  - [ ] Event handler: `chat:send` with message persistence and recipient dispatch
-  - [ ] Event handler: `consultation:end` and summary calculation
+- [x] **2.1 Project Setup & Configuration**
+  - [x] Initialize Node.js + TypeScript environment (`package.json`, `tsconfig.json`)
+  - [x] Install dependencies (`express`, `ws`, `@supabase/supabase-js`, `zod`, `dotenv`, `cors`)
+  - [x] Configure Supabase Service Role client and environment loader
+- [x] **2.2 Middleware & Security**
+  - [x] JWT / Supabase Auth validation middleware
+  - [x] Error handler and request validation middleware
+- [x] **2.3 REST Endpoints**
+  - [x] `POST /api/auth/verify-token` — User session sync
+  - [x] `GET /api/user/profile` & `PUT /api/user/profile` — Fetch/update birth details & balance
+  - [x] `GET /api/astrologers` & `GET /api/astrologers/:id` — Listing with filters & detail view
+  - [x] `GET /api/wallet/balance` & `POST /api/wallet/recharge` — Mock wallet top-up & balance check
+  - [x] `GET /api/wallet/transactions` — Transaction history
+  - [x] `GET /api/consultations/history` & `GET /api/consultations/:id/messages` — Session & chat logs
+  - [x] `GET /api/astrology/horoscope` — Daily zodiac horoscope predictions
+  - [x] `POST /api/astrology/kundli` — Basic planetary & ascendant calculation engine
+- [x] **2.4 WebSocket & Realtime Engine**
+  - [x] Setup WebSocket server (`ws`) attached to HTTP server instance
+  - [x] Client connection authentication and `userId -> WebSocket` session registry
+  - [x] Event handler: `consultation:initiate` (with minimum balance validation)
+  - [x] Event handler: `consultation:accept` and `consultation:started`
+  - [x] Real-time per-minute billing worker (atomic wallet debit every 60s)
+  - [x] Insufficient balance detection and automatic session termination
+  - [x] Event handler: `chat:send` with message persistence and recipient dispatch
+  - [x] Event handler: `consultation:end` and summary calculation
 
 ---
 
@@ -83,7 +83,7 @@
 | :--- | :--- | :--- |
 | **Phase 1** | Requirements & System Architecture Specification | Completed |
 | **Phase 2** | Supabase Setup & Database Schema Initialization | Completed |
-| **Phase 3** | Express.js REST API & WebSocket Realtime Server | In Progress |
-| **Phase 4** | Flutter App Theme, Components & Screens | Pending |
+| **Phase 3** | Express.js REST API & WebSocket Realtime Server | Completed |
+| **Phase 4** | Flutter App Theme, Components & Screens | In Progress |
 | **Phase 5** | End-to-End WebSocket Consultation & Billing Integration | Pending |
 | **Phase 6** | Demo Hardening & Final Walkthrough | Pending |
