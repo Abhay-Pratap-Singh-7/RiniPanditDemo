@@ -44,6 +44,19 @@ class Astrologer {
         avatarUrl: '',
       );
     }
+
+    double parseDouble(dynamic v, double fallback) {
+      if (v == null) return fallback;
+      if (v is num) return v.toDouble();
+      return double.tryParse(v.toString()) ?? fallback;
+    }
+
+    int parseInt(dynamic v, int fallback) {
+      if (v == null) return fallback;
+      if (v is num) return v.toInt();
+      return int.tryParse(v.toString()) ?? fallback;
+    }
+
     return Astrologer(
       id: json['id']?.toString() ?? '',
       displayName: json['display_name'] ?? json['displayName'] ?? 'Acharya',
@@ -53,10 +66,10 @@ class Astrologer {
       languages: json['languages'] is List
           ? List<String>.from(json['languages'])
           : const ['Hindi', 'English'],
-      experienceYears: json['experience_years'] ?? json['experienceYears'] ?? 5,
-      ratePerMinute: (json['rate_per_minute'] ?? json['ratePerMinute'] as num?)?.toDouble() ?? 25.0,
-      rating: (json['rating'] as num?)?.toDouble() ?? 5.0,
-      totalReviews: json['total_reviews'] ?? json['totalReviews'] ?? 0,
+      experienceYears: parseInt(json['experience_years'] ?? json['experienceYears'], 5),
+      ratePerMinute: parseDouble(json['rate_per_minute'] ?? json['ratePerMinute'], 25.0),
+      rating: parseDouble(json['rating'], 5.0),
+      totalReviews: parseInt(json['total_reviews'] ?? json['totalReviews'], 0),
       isOnline: json['is_online'] ?? json['isOnline'] ?? true,
       isBusy: json['is_busy'] ?? json['isBusy'] ?? false,
       bio: json['bio']?.toString() ?? '',

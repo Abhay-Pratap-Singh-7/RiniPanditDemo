@@ -142,7 +142,7 @@ class DataStore {
     const db = getDbClient();
     if (db) {
       try {
-        let query = db.from('astrologers').select('*');
+        let query = db.from('astrologers').select('*').order('created_at', { ascending: false });
         if (specialty) {
           query = query.contains('specialties', [specialty]);
         }

@@ -8,6 +8,7 @@ import '../widgets/quick_feature_tile.dart';
 import '../widgets/featured_story_card.dart';
 import '../widgets/horoscope_card.dart';
 import '../widgets/astrologer_card.dart';
+import '../widgets/shimmer_loading.dart';
 import 'astrologer_list_screen.dart';
 import 'kundli_screen.dart';
 import 'wallet_screen.dart';
@@ -21,6 +22,14 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<AppState>().loadAstrologers();
+    });
+  }
 
   final List<Map<String, dynamic>> _navItems = const [
     {
@@ -145,124 +154,139 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         const AppHeader(title: 'Rini Astro'),
         Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.only(bottom: 90),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Top 3 Quick Feature Tiles (with transparent assets)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                  child: Row(
-                    children: [
-                      QuickFeatureTile(
-                        title: 'Vedic\nGuidance',
-                        assetName: 'tile_vedic.png',
-                        fallbackIcon: Icons.menu_book,
-                        onTap: () {
-                          setState(() => _currentIndex = 1);
-                        },
-                      ),
-                      QuickFeatureTile(
-                        title: 'Zodiac\nSigns',
-                        assetName: 'tile_zodiac.png',
-                        fallbackIcon: Icons.brightness_7_rounded,
-                        onTap: () {
-                          setState(() => _currentIndex = 2);
-                        },
-                      ),
-                      QuickFeatureTile(
-                        title: 'Kundli\nChart',
-                        assetName: 'tile_kundli.png',
-                        fallbackIcon: Icons.description_outlined,
-                        onTap: () {
-                          setState(() => _currentIndex = 2);
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Daily Horoscope Card Carousel
-                const HoroscopeCard(),
-                const SizedBox(height: 18),
-
-                // 3 Large Featured Story Cards (app background color & under-text artwork)
-                FeaturedStoryCard(
-                  title: "Vedic Astrology Reading",
-                  subtitle: "connects you with verified astrologers for guidance",
-                  accentColor: AppTheme.cardPurple,
-                  assetName: 'card_vedic_art.png',
-                  fallbackIcon: Icons.menu_book_rounded,
-                  onTap: () {
-                    setState(() => _currentIndex = 1);
-                  },
-                ),
-
-                FeaturedStoryCard(
-                  title: "Tarot & Subconscious Voice",
-                  subtitle: "sheds light on the questions your inner soul is seeking",
-                  accentColor: AppTheme.cardLilac,
-                  assetName: 'card_tarot_art.png',
-                  fallbackIcon: Icons.style,
-                  onTap: () {
-                    setState(() => _currentIndex = 1);
-                  },
-                ),
-
-                FeaturedStoryCard(
-                  title: "Cosmic Kundli Forecast",
-                  subtitle: "unveils planetary houses, transits, and customized remedies",
-                  accentColor: AppTheme.cardCoral,
-                  assetName: 'card_kundli_art.png',
-                  fallbackIcon: Icons.public_rounded,
-                  onTap: () {
-                    setState(() => _currentIndex = 2);
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // Top Astrologers Section
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Top Astrologers',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: AppTheme.textWhite,
-                          letterSpacing: -0.2,
+          child: RefreshIndicator(
+            color: AppTheme.cardPurple,
+            backgroundColor: AppTheme.surfaceDark,
+            onRefresh: () async {
+              await appState.loadAstrologers();
+            },
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.only(bottom: 150),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Top 3 Quick Feature Tiles (with transparent assets)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    child: Row(
+                      children: [
+                        QuickFeatureTile(
+                          title: 'Vedic\nGuidance',
+                          assetName: 'tile_vedic.png',
+                          fallbackIcon: Icons.menu_book,
+                          onTap: () {
+                            setState(() => _currentIndex = 1);
+                          },
                         ),
-                      ),
-                      TextButton(
-                        onPressed: () => setState(() => _currentIndex = 1),
-                        child: const Text(
-                          'View All',
-                          style: TextStyle(
-                            color: AppTheme.cardLilac,
-                            fontWeight: FontWeight.w600,
+                        QuickFeatureTile(
+                          title: 'Zodiac\nSigns',
+                          assetName: 'tile_zodiac.png',
+                          fallbackIcon: Icons.brightness_7_rounded,
+                          onTap: () {
+                            setState(() => _currentIndex = 2);
+                          },
+                        ),
+                        QuickFeatureTile(
+                          title: 'Kundli\nChart',
+                          assetName: 'tile_kundli.png',
+                          fallbackIcon: Icons.description_outlined,
+                          onTap: () {
+                            setState(() => _currentIndex = 2);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Daily Horoscope Card Carousel
+                  const HoroscopeCard(),
+                  const SizedBox(height: 18),
+
+                  // 3 Large Featured Story Cards (app background color & under-text artwork)
+                  FeaturedStoryCard(
+                    title: "Vedic Astrology Reading",
+                    subtitle: "connects you with verified astrologers for guidance",
+                    accentColor: AppTheme.cardPurple,
+                    assetName: 'card_vedic_art.png',
+                    fallbackIcon: Icons.menu_book_rounded,
+                    onTap: () {
+                      setState(() => _currentIndex = 1);
+                    },
+                  ),
+
+                  FeaturedStoryCard(
+                    title: "Tarot & Subconscious Voice",
+                    subtitle: "sheds light on the questions your inner soul is seeking",
+                    accentColor: AppTheme.cardLilac,
+                    assetName: 'card_tarot_art.png',
+                    fallbackIcon: Icons.style,
+                    onTap: () {
+                      setState(() => _currentIndex = 1);
+                    },
+                  ),
+
+                  FeaturedStoryCard(
+                    title: "Cosmic Kundli Forecast",
+                    subtitle: "unveils planetary houses, transits, and customized remedies",
+                    accentColor: AppTheme.cardCoral,
+                    assetName: 'card_kundli_art.png',
+                    fallbackIcon: Icons.public_rounded,
+                    onTap: () {
+                      setState(() => _currentIndex = 2);
+                    },
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Top Astrologers Section
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          appState.astrologers.isNotEmpty
+                              ? 'Top Astrologers (${appState.astrologers.length})'
+                              : 'Top Astrologers',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.textWhite,
+                            letterSpacing: -0.2,
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                if (appState.astrologers.isEmpty)
-                  const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(24),
-                      child: CircularProgressIndicator(color: AppTheme.cardPurple),
+                        TextButton(
+                          onPressed: () => setState(() => _currentIndex = 1),
+                          child: const Text(
+                            'View All',
+                            style: TextStyle(
+                              color: AppTheme.cardLilac,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  )
-                else
-                  ...appState.astrologers.map((astro) => AstrologerCard(astrologer: astro)),
+                  ),
 
-                const SizedBox(height: 30),
-              ],
+                  if (appState.isLoadingAstrologers && appState.astrologers.isEmpty) ...[
+                    const AstrologerCardShimmer(),
+                    const AstrologerCardShimmer(),
+                    const AstrologerCardShimmer(),
+                  ] else if (appState.astrologers.isEmpty) ...[
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(24),
+                        child: Text('No astrologers found', style: TextStyle(color: AppTheme.textMuted)),
+                      ),
+                    ),
+                  ] else ...[
+                    ...appState.astrologers.map((astro) => AstrologerCard(astrologer: astro)),
+                  ],
+
+                  const SizedBox(height: 30),
+                ],
+              ),
             ),
           ),
         ),

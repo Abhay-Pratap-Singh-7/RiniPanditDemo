@@ -4,6 +4,7 @@ import '../core/theme/app_theme.dart';
 import '../providers/app_state.dart';
 import '../widgets/cosmic_scaffold.dart';
 import '../widgets/astrologer_card.dart';
+import '../widgets/shimmer_loading.dart';
 import '../widgets/app_header.dart';
 
 class AstrologerListScreen extends StatefulWidget {
@@ -25,6 +26,9 @@ class _AstrologerListScreenState extends State<AstrologerListScreen> {
     if (widget.initialCategory != null) {
       _selectedCategory = widget.initialCategory!;
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<AppState>().loadAstrologers();
+    });
   }
 
   @override
@@ -41,7 +45,7 @@ class _AstrologerListScreenState extends State<AstrologerListScreen> {
 
     final content = Column(
       children: [
-        const AppHeader(title: 'Astrologer Marketplace'),
+        AppHeader(title: 'Astrologers (${filtered.length})'),
 
         // Filter Chips Row
         SizedBox(
@@ -85,20 +89,39 @@ class _AstrologerListScreenState extends State<AstrologerListScreen> {
           ),
         ),
 
-        // Astrologer Cards List
+        // Astrologer Cards List with Pull to Refresh & Shimmer Loading
         Expanded(
-          child: filtered.isEmpty
-              ? const Center(
-                  child: Text(
-                    'No astrologers found in this category',
-                    style: TextStyle(color: AppTheme.textMuted),
-                  ),
-                )
-              : ListView.builder(
-                  padding: EdgeInsets.only(bottom: canPop ? 30 : 110, top: 4),
-                  itemCount: filtered.length,
-                  itemBuilder: (context, index) => AstrologerCard(astrologer: filtered[index]),
-                ),
+          child: RefreshIndicator(
+            color: AppTheme.cardPurple,
+            backgroundColor: AppTheme.surfaceDark,
+            onRefresh: () async {
+              await appState.loadAstrologers();
+            },
+            child: appState.isLoadingAstrologers && filtered.isEmpty
+                ? ListView.builder(
+                    padding: EdgeInsets.only(bottom: canPop ? 30 : 150, top: 4),
+                    itemCount: 4,
+                    itemBuilder: (_, _) => const AstrologerCardShimmer(),
+                  )
+                : filtered.isEmpty
+                    ? SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        child: Container(
+                          height: 300,
+                          alignment: Alignment.center,
+                          child: const Text(
+                            'No astrologers found in this category',
+                            style: TextStyle(color: AppTheme.textMuted),
+                          ),
+                        ),
+                      )
+                    : ListView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: EdgeInsets.only(bottom: canPop ? 30 : 150, top: 4),
+                        itemCount: filtered.length,
+                        itemBuilder: (context, index) => AstrologerCard(astrologer: filtered[index]),
+                      ),
+          ),
         ),
       ],
     );

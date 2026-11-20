@@ -35,6 +35,7 @@ class AppState extends ChangeNotifier {
   // Client State
   UserProfile? _userProfile;
   List<Astrologer> _astrologers = [];
+  bool _isLoadingAstrologers = false;
   List<WalletTransaction> _transactions = [];
   Map<String, Horoscope> _horoscopes = {};
   Horoscope? _currentHoroscope;
@@ -62,6 +63,7 @@ class AppState extends ChangeNotifier {
   UserProfile? get userProfile => _userProfile;
   double get walletBalance => _userProfile?.walletBalance ?? 0.0;
   List<Astrologer> get astrologers => _astrologers;
+  bool get isLoadingAstrologers => _isLoadingAstrologers;
   List<WalletTransaction> get transactions => _transactions;
   Map<String, Horoscope> get horoscopes => _horoscopes;
   Horoscope? get currentHoroscope => _currentHoroscope;
@@ -232,6 +234,7 @@ class AppState extends ChangeNotifier {
         _socket.connect(uid.toString());
 
         await loadProfile();
+        await loadAstrologers();
         if (isPandit) {
           await loadPanditData(_currentPandit?.id ?? _userProfile?.id);
         }
@@ -286,6 +289,7 @@ class AppState extends ChangeNotifier {
         _socket.connect(uid.toString());
 
         await loadProfile();
+        await loadAstrologers();
         if (isPandit) {
           await loadPanditData(_currentPandit?.id ?? _userProfile?.id);
         }
@@ -477,10 +481,15 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> loadAstrologers({String? specialty}) async {
+    _isLoadingAstrologers = true;
+    notifyListeners();
     try {
       _astrologers = await _api.getAstrologers(specialty: specialty);
-      notifyListeners();
     } catch (_) {}
+    finally {
+      _isLoadingAstrologers = false;
+      notifyListeners();
+    }
   }
 
   Future<void> rechargeWallet(double amount) async {
