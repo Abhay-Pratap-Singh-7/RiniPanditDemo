@@ -62,7 +62,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Row(
                 children: [
                   QuickFeatureTile(
-                    title: 'Vedic Guidance',
+                    title: 'Vedic\nGuidance',
                     assetName: 'tile_vedic.png',
                     fallbackIcon: Icons.menu_book,
                     onTap: () {
@@ -70,7 +70,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     },
                   ),
                   QuickFeatureTile(
-                    title: 'Zodiac Signs',
+                    title: 'Zodiac\nSigns',
                     assetName: 'tile_zodiac.png',
                     fallbackIcon: Icons.brightness_7_rounded,
                     onTap: () {
@@ -78,7 +78,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     },
                   ),
                   QuickFeatureTile(
-                    title: 'Kundli Chart',
+                    title: 'Kundli\nChart',
                     assetName: 'tile_kundli.png',
                     fallbackIcon: Icons.description_outlined,
                     onTap: () {
@@ -89,11 +89,15 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
-            // 3 Large Featured Story Cards (with cut out transparent assets)
+            // Daily Horoscope Card
+            const HoroscopeCard(),
+            const SizedBox(height: 18),
+
+            // 3 Large Featured Story Cards (with app background color & under-text artwork)
             FeaturedStoryCard(
               title: "Vedic Astrology Reading",
               subtitle: "connects you with verified astrologers for guidance",
-              backgroundColor: AppTheme.cardPurple,
+              accentColor: AppTheme.cardPurple,
               assetName: 'card_vedic_art.png',
               fallbackIcon: Icons.menu_book_rounded,
               onTap: () {
@@ -104,7 +108,7 @@ class _HomeScreenState extends State<HomeScreen> {
             FeaturedStoryCard(
               title: "Tarot & Subconscious Voice",
               subtitle: "sheds light on the questions your inner soul is seeking",
-              backgroundColor: AppTheme.cardLilac,
+              accentColor: AppTheme.cardLilac,
               assetName: 'card_tarot_art.png',
               fallbackIcon: Icons.style,
               onTap: () {
@@ -115,7 +119,7 @@ class _HomeScreenState extends State<HomeScreen> {
             FeaturedStoryCard(
               title: "Cosmic Kundli Forecast",
               subtitle: "unveils planetary houses, transits, and customized remedies",
-              backgroundColor: AppTheme.cardCoral,
+              accentColor: AppTheme.cardCoral,
               assetName: 'card_kundli_art.png',
               fallbackIcon: Icons.public_rounded,
               onTap: () {
@@ -123,10 +127,6 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
             const SizedBox(height: 16),
-
-            // Daily Horoscope Card
-            const HoroscopeCard(),
-            const SizedBox(height: 18),
 
             // Top Verified Astrologers Section
             Padding(

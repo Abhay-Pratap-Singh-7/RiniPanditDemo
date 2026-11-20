@@ -21,7 +21,7 @@ class QuickFeatureTile extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         child: Container(
-          height: 74, // Ultra-compact sleek height
+          height: 90, // Ultra-compact sleek height
           margin: const EdgeInsets.symmetric(horizontal: 4),
           decoration: BoxDecoration(
             color: AppTheme.surfaceTile,
@@ -73,9 +73,9 @@ class QuickFeatureTile extends StatelessWidget {
 
               // Title written on top of the vertical overlay
               Positioned(
-                left: 3,
-                right: 3,
-                bottom: 4,
+                left: 4,
+                right: 4,
+                bottom: 10,
                 child: Center(
                   child: Wrap(
                     alignment: WrapAlignment.center,
@@ -90,7 +90,7 @@ class QuickFeatureTile extends StatelessWidget {
                           letterSpacing: -0.2,
                           height: 1.1,
                         ),
-                        maxLines: 1,
+                        maxLines: 2,
                         softWrap: true,
                         overflow: TextOverflow.ellipsis,
                       ),

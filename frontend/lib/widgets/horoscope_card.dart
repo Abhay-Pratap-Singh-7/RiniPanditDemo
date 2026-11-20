@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:provider/provider.dart';
 import '../core/theme/app_theme.dart';
 import '../providers/app_state.dart';
@@ -13,6 +14,7 @@ class HoroscopeCard extends StatefulWidget {
 class _HoroscopeCardState extends State<HoroscopeCard> {
   late final PageController _pageController;
   int _currentPage = 0;
+  Timer? _autoSlideTimer;
 
   final List<Map<String, String>> _zodiacList = const [
     {'name': 'Aries', 'vedic': 'Mesh', 'dates': 'Mar 21 - Apr 19', 'element': 'Fire', 'key': 'aries'},
@@ -33,10 +35,23 @@ class _HoroscopeCardState extends State<HoroscopeCard> {
   void initState() {
     super.initState();
     _pageController = PageController(viewportFraction: 0.92);
+
+    // Auto-slide carousel every 4 seconds
+    _autoSlideTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
+      if (_pageController.hasClients) {
+        final nextPage = (_currentPage + 1) % _zodiacList.length;
+        _pageController.animateToPage(
+          nextPage,
+          duration: const Duration(milliseconds: 700),
+          curve: Curves.easeInOutCubic,
+        );
+      }
+    });
   }
 
   @override
   void dispose() {
+    _autoSlideTimer?.cancel();
     _pageController.dispose();
     super.dispose();
   }
@@ -97,7 +112,7 @@ class _HoroscopeCardState extends State<HoroscopeCard> {
         ),
         const SizedBox(height: 6),
 
-        // Horoscope Swipeable Carousel
+        // Horoscope Swipeable Carousel with 4-second auto slide
         SizedBox(
           height: 220,
           child: PageView.builder(
@@ -198,7 +213,7 @@ class _HoroscopeCardState extends State<HoroscopeCard> {
                             border: Border.all(color: AppTheme.borderSubtle),
                           ),
                           child: const Text(
-                            'Swipe',
+                            'Auto',
                             style: TextStyle(fontSize: 11, color: AppTheme.cardLilac),
                           ),
                         ),

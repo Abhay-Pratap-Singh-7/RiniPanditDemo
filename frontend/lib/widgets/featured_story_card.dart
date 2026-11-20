@@ -4,7 +4,7 @@ import '../core/theme/app_theme.dart';
 class FeaturedStoryCard extends StatelessWidget {
   final String title;
   final String subtitle;
-  final Color backgroundColor;
+  final Color accentColor;
   final String assetName;
   final IconData fallbackIcon;
   final VoidCallback onTap;
@@ -13,7 +13,7 @@ class FeaturedStoryCard extends StatelessWidget {
     super.key,
     required this.title,
     required this.subtitle,
-    required this.backgroundColor,
+    this.accentColor = AppTheme.cardPurple,
     required this.assetName,
     required this.fallbackIcon,
     required this.onTap,
@@ -24,17 +24,18 @@ class FeaturedStoryCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 116,
+        height: 142,
         width: double.infinity,
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: backgroundColor,
+          color: AppTheme.surfaceDark.withAlpha(235), // App background surface color
           borderRadius: AppTheme.cardRadius,
+          border: Border.all(color: AppTheme.borderSubtle, width: 1.2),
           boxShadow: [
             BoxShadow(
-              color: backgroundColor.withAlpha(70),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
+              color: Colors.black.withAlpha(80),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
@@ -44,12 +45,12 @@ class FeaturedStoryCard extends StatelessWidget {
           children: [
             // Full card image asset placed UNDER the text
             Positioned(
-              right: -10,
+              right: -5,
               top: -10,
               bottom: -10,
-              width: 210,
+              width: 195,
               child: Opacity(
-                opacity: 0.92,
+                opacity: 0.90,
                 child: Image.asset(
                   'assets/cards/$assetName',
                   fit: BoxFit.contain,
@@ -59,13 +60,13 @@ class FeaturedStoryCard extends StatelessWidget {
                       alignment: Alignment.centerRight,
                       child: Container(
                         margin: const EdgeInsets.only(right: 20),
-                        width: 90,
-                        height: 90,
+                        width: 80,
+                        height: 80,
                         decoration: BoxDecoration(
-                          color: Colors.white.withAlpha(30),
+                          color: accentColor.withAlpha(30),
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(fallbackIcon, size: 50, color: Colors.white.withAlpha(220)),
+                        child: Icon(fallbackIcon, size: 44, color: accentColor),
                       ),
                     );
                   },
@@ -81,12 +82,12 @@ class FeaturedStoryCard extends StatelessWidget {
                     begin: Alignment.centerLeft,
                     end: Alignment.centerRight,
                     colors: [
-                      backgroundColor.withAlpha(250),
-                      backgroundColor.withAlpha(220),
-                      backgroundColor.withAlpha(120),
-                      backgroundColor.withAlpha(30),
+                      AppTheme.surfaceDark,
+                      AppTheme.surfaceDark.withAlpha(230),
+                      AppTheme.surfaceDark.withAlpha(120),
+                      Colors.transparent,
                     ],
-                    stops: const [0.0, 0.45, 0.75, 1.0],
+                    stops: const [0.0, 0.45, 0.70, 1.0],
                   ),
                 ),
               ),
@@ -94,9 +95,9 @@ class FeaturedStoryCard extends StatelessWidget {
 
             // Text on top across full width
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
               child: SizedBox(
-                width: MediaQuery.of(context).size.width * 0.65,
+                width: MediaQuery.of(context).size.width * 0.62,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -107,7 +108,7 @@ class FeaturedStoryCard extends StatelessWidget {
                           title,
                           style: const TextStyle(
                             color: AppTheme.textWhite,
-                            fontSize: 19,
+                            fontSize: 18,
                             fontWeight: FontWeight.w900,
                             letterSpacing: -0.4,
                             height: 1.2,
@@ -116,16 +117,16 @@ class FeaturedStoryCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     Wrap(
                       children: [
                         Text(
                           subtitle,
                           style: const TextStyle(
-                            color: Color(0xEEFFFFFF),
-                            fontSize: 13,
+                            color: AppTheme.textMuted,
+                            fontSize: 12.5,
                             fontWeight: FontWeight.w400,
-                            height: 1.35,
+                            height: 1.3,
                           ),
                           softWrap: true,
                         ),
@@ -142,7 +143,7 @@ class FeaturedStoryCard extends StatelessWidget {
                 child: Container(
                   decoration: BoxDecoration(
                     borderRadius: AppTheme.cardRadius,
-                    border: Border.all(color: Colors.white.withAlpha(40), width: 1.2),
+                    border: Border.all(color: AppTheme.borderSubtle, width: 1.2),
                   ),
                 ),
               ),
