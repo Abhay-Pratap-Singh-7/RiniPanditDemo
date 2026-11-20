@@ -3,8 +3,8 @@ import 'package:provider/provider.dart';
 import '../core/theme/app_theme.dart';
 import '../providers/app_state.dart';
 import '../screens/wallet_screen.dart';
-import '../screens/role_selection_screen.dart';
 import '../screens/auth_screen.dart';
+import '../screens/profile_screen.dart';
 
 class AppHeader extends StatelessWidget implements PreferredSizeWidget {
   final String title;
@@ -66,7 +66,7 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
         ],
       ),
       actions: [
-        // Supabase Auth Account Button
+        // Supabase Auth / Profile Button
         IconButton(
           icon: Icon(
             appState.isAuthenticated ? Icons.account_circle : Icons.account_circle_outlined,
@@ -75,22 +75,17 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
           ),
           tooltip: appState.isAuthenticated ? 'Account Profile' : 'Sign In with Supabase',
           onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const AuthScreen()),
-            );
-          },
-        ),
-
-        // Role Switcher Button
-        IconButton(
-          icon: const Icon(Icons.swap_horiz, color: AppTheme.cardLilac, size: 22),
-          tooltip: 'Switch Role (Client / Pandit)',
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const RoleSelectionScreen()),
-            );
+            if (appState.isAuthenticated) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ProfileScreen()),
+              );
+            } else {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AuthScreen()),
+              );
+            }
           },
         ),
 

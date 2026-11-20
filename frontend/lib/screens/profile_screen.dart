@@ -3,159 +3,273 @@ import 'package:provider/provider.dart';
 import '../core/theme/app_theme.dart';
 import '../providers/app_state.dart';
 import '../widgets/cosmic_scaffold.dart';
+import 'auth_screen.dart';
 
-class ProfileScreen extends StatefulWidget {
+class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
-
-  @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
-}
-
-class _ProfileScreenState extends State<ProfileScreen> {
-  late TextEditingController _nameController;
-  late TextEditingController _phoneController;
-  late TextEditingController _dobController;
-  late TextEditingController _tobController;
-  late TextEditingController _cityController;
-
-  @override
-  void initState() {
-    super.initState();
-    final profile = context.read<AppState>().userProfile;
-    _nameController = TextEditingController(text: profile?.fullName ?? 'Rahul Sharma');
-    _phoneController = TextEditingController(text: profile?.phone ?? '+919876543210');
-    _dobController = TextEditingController(text: profile?.dob ?? '1995-08-15');
-    _tobController = TextEditingController(text: profile?.tob ?? '07:30');
-    _cityController = TextEditingController(text: profile?.pobCity ?? 'New Delhi');
-  }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _phoneController.dispose();
-    _dobController.dispose();
-    _tobController.dispose();
-    _cityController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
+    final profile = appState.userProfile;
+    final pandit = appState.currentPandit;
+    final isPandit = appState.isPandit;
+
+    final displayName = isPandit
+        ? (pandit?.displayName.isNotEmpty == true ? pandit!.displayName : 'Acharya')
+        : (profile?.fullName.isNotEmpty == true ? profile!.fullName : 'Devotee');
+
+    final email = appState.currentUser?['email'] as String? ?? 'Authenticated User';
+    final phone = profile?.phone.isNotEmpty == true
+        ? profile!.phone
+        : (appState.currentUser?['phone'] as String? ?? 'Not provided');
 
     return CosmicScaffold(
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        title: const Text('My Profile & Birth Data'),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            // Avatar Header
-            Center(
-              child: Stack(
-                children: [
-                  CircleAvatar(
-                    radius: 46,
-                    backgroundColor: AppTheme.cardPurple,
-                    backgroundImage: appState.userProfile?.avatarUrl.isNotEmpty == true
-                        ? NetworkImage(appState.userProfile!.avatarUrl)
-                        : null,
-                    child: appState.userProfile?.avatarUrl.isEmpty != false
-                        ? const Icon(Icons.person, size: 48, color: Colors.white)
-                        : null,
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: CircleAvatar(
-                      radius: 14,
-                      backgroundColor: AppTheme.cardCoral,
-                      child: const Icon(Icons.edit, size: 14, color: Colors.white),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Form Card
-            Container(
-              padding: const EdgeInsets.all(18.0),
-              decoration: BoxDecoration(
-                color: AppTheme.surfaceDark.withAlpha(220),
-                borderRadius: AppTheme.cardRadius,
-                border: Border.all(color: AppTheme.borderSubtle, width: 1.2),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  TextField(
-                    controller: _nameController,
-                    decoration: const InputDecoration(labelText: 'Full Name'),
-                  ),
-                  const SizedBox(height: 12),
-
-                  TextField(
-                    controller: _phoneController,
-                    enabled: false,
-                    decoration: const InputDecoration(
-                      labelText: 'Phone Number (Verified)',
-                      prefixIcon: Icon(Icons.verified_user_outlined, color: AppTheme.accentCyan, size: 18),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _dobController,
-                          decoration: const InputDecoration(labelText: 'Date of Birth (YYYY-MM-DD)'),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: TextField(
-                          controller: _tobController,
-                          decoration: const InputDecoration(labelText: 'Time of Birth (HH:MM)'),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-
-                  TextField(
-                    controller: _cityController,
-                    decoration: const InputDecoration(labelText: 'Place of Birth (City)'),
-                  ),
-                  const SizedBox(height: 20),
-
-                  ElevatedButton(
-                    onPressed: () async {
-                      await appState.updateProfile({
-                        'full_name': _nameController.text,
-                        'dob': _dobController.text,
-                        'tob': _tobController.text,
-                        'pob_city': _cityController.text,
-                      });
-                      if (!context.mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Profile and birth details updated successfully.'),
-                          backgroundColor: AppTheme.cardPurple,
-                        ),
-                      );
-                    },
-                    child: const Text('Save Birth Details'),
-                  ),
-                ],
-              ),
-            ),
-          ],
+        elevation: 0,
+        title: const Text(
+          'Profile',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: AppTheme.textWhite,
+          ),
         ),
       ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 12),
+
+              // Avatar & Name Card
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceDark.withAlpha(220),
+                  borderRadius: AppTheme.cardRadius,
+                  border: Border.all(color: AppTheme.borderSubtle, width: 1.2),
+                ),
+                child: Column(
+                  children: [
+                    CircleAvatar(
+                      radius: 42,
+                      backgroundColor: AppTheme.cardPurple.withAlpha(50),
+                      backgroundImage: profile?.avatarUrl.isNotEmpty == true
+                          ? NetworkImage(profile!.avatarUrl)
+                          : null,
+                      child: profile?.avatarUrl.isEmpty != false
+                          ? const Icon(Icons.person, size: 44, color: AppTheme.cardLilac)
+                          : null,
+                    ),
+                    const SizedBox(height: 14),
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      children: [
+                        Text(
+                          displayName,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.textWhite,
+                            letterSpacing: -0.3,
+                          ),
+                          textAlign: TextAlign.center,
+                          softWrap: true,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: isPandit
+                            ? AppTheme.cardCoral.withAlpha(35)
+                            : AppTheme.cardPurple.withAlpha(45),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: isPandit ? AppTheme.cardCoral : AppTheme.cardLilac,
+                          width: 1,
+                        ),
+                      ),
+                      child: Text(
+                        isPandit ? 'Acharya / Pandit' : 'Client / Devotee',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: isPandit ? AppTheme.cardCoral : AppTheme.cardLilac,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Account Details List
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceDark.withAlpha(220),
+                  borderRadius: AppTheme.cardRadius,
+                  border: Border.all(color: AppTheme.borderSubtle, width: 1.2),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Account Details',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.textWhite,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    _buildInfoTile(
+                      icon: Icons.email_outlined,
+                      label: 'Email',
+                      value: email,
+                    ),
+                    const Divider(color: AppTheme.borderSubtle, height: 20),
+                    _buildInfoTile(
+                      icon: Icons.phone_outlined,
+                      label: 'Phone',
+                      value: phone,
+                    ),
+                    const Divider(color: AppTheme.borderSubtle, height: 20),
+                    _buildInfoTile(
+                      icon: Icons.account_balance_wallet_outlined,
+                      label: 'Wallet Balance',
+                      value: '₹${appState.walletBalance.toStringAsFixed(0)}',
+                    ),
+                    if (isPandit && pandit != null) ...[
+                      const Divider(color: AppTheme.borderSubtle, height: 20),
+                      _buildInfoTile(
+                        icon: Icons.currency_rupee,
+                        label: 'Consultation Rate',
+                        value: '₹${pandit.ratePerMinute.toStringAsFixed(0)} / min',
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Logout Button
+              SizedBox(
+                height: 50,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFC0392B).withAlpha(220),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      side: const BorderSide(color: Color(0xFFE74C3C), width: 1),
+                    ),
+                    elevation: 0,
+                  ),
+                  icon: const Icon(Icons.logout_rounded, size: 20),
+                  label: const Text(
+                    'Log Out',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                  onPressed: () async {
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        backgroundColor: AppTheme.surfaceDark,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                          side: const BorderSide(color: AppTheme.borderSubtle),
+                        ),
+                        title: const Text(
+                          'Log Out',
+                          style: TextStyle(color: AppTheme.textWhite, fontWeight: FontWeight.w700),
+                        ),
+                        content: const Text(
+                          'Are you sure you want to log out of your account?',
+                          style: TextStyle(color: AppTheme.textMuted),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, false),
+                            child: const Text('Cancel', style: TextStyle(color: AppTheme.textMuted)),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, true),
+                            child: const Text('Log Out', style: TextStyle(color: Color(0xFFE74C3C), fontWeight: FontWeight.w700)),
+                          ),
+                        ],
+                      ),
+                    );
+
+                    if (confirm == true && context.mounted) {
+                      await appState.logout();
+                      if (!context.mounted) return;
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(builder: (_) => const AuthScreen()),
+                        (route) => false,
+                      );
+                    }
+                  },
+                ),
+              ),
+              const SizedBox(height: 32),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoTile({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Row(
+      children: [
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: AppTheme.cardPurple.withAlpha(30),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, size: 18, color: AppTheme.cardLilac),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(fontSize: 11, color: AppTheme.textMuted),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textWhite,
+                ),
+                softWrap: true,
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

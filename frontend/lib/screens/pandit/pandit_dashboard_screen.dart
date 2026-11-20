@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/app_state.dart';
 import '../../widgets/cosmic_scaffold.dart';
-import '../role_selection_screen.dart';
+import '../profile_screen.dart';
 import 'pandit_chat_screen.dart';
 import 'pandit_earnings_screen.dart';
 
@@ -36,13 +36,13 @@ class PanditDashboardScreen extends StatelessWidget {
           ],
         ),
         actions: [
-          TextButton.icon(
-            icon: const Icon(Icons.swap_horiz, color: AppTheme.cardLilac, size: 18),
-            label: const Text('Switch Role', style: TextStyle(color: AppTheme.cardLilac, fontSize: 13)),
+          IconButton(
+            icon: const Icon(Icons.account_circle, color: AppTheme.accentCyan, size: 22),
+            tooltip: 'Account Profile',
             onPressed: () {
-              Navigator.pushReplacement(
+              Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const RoleSelectionScreen()),
+                MaterialPageRoute(builder: (_) => const ProfileScreen()),
               );
             },
           ),
