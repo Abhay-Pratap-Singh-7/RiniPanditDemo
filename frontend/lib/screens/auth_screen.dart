@@ -143,14 +143,27 @@ class _AuthScreenState extends State<AuthScreen> {
                 // Top Emblem
                 Center(
                   child: Container(
-                    width: 76,
-                    height: 76,
+                    width: 80,
+                    height: 80,
                     decoration: BoxDecoration(
-                      color: AppTheme.cardPurple.withAlpha(45),
                       shape: BoxShape.circle,
                       border: Border.all(color: AppTheme.cardLilac, width: 1.5),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.cardPurple.withAlpha(80),
+                          blurRadius: 16,
+                          spreadRadius: 2,
+                        ),
+                      ],
                     ),
-                    child: const Icon(Icons.auto_awesome, color: AppTheme.cardLilac, size: 38),
+                    child: ClipOval(
+                      child: Image.asset(
+                        'assets/logo.webp',
+                        width: 80,
+                        height: 80,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 18),

@@ -44,12 +44,19 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
         children: [
           if (!showBack || !canPop) ...[
             Container(
-              padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: AppTheme.cardPurple.withAlpha(50),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppTheme.cardLilac.withAlpha(80), width: 1),
               ),
-              child: const Icon(Icons.nightlight_round, color: AppTheme.cardLilac, size: 20),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(7),
+                child: Image.asset(
+                  'assets/logo.webp',
+                  width: 28,
+                  height: 28,
+                  fit: BoxFit.cover,
+                ),
+              ),
             ),
             const SizedBox(width: 10),
           ],
