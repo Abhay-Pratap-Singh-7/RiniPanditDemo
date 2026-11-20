@@ -13,13 +13,7 @@ class WalletScreen extends StatefulWidget {
 }
 
 class _WalletScreenState extends State<WalletScreen> {
-  final TextEditingController _amountController = TextEditingController(text: '500');
-  final List<Map<String, dynamic>> _presetPacks = [
-    {'amount': 100, 'badge': ''},
-    {'amount': 250, 'badge': 'Popular'},
-    {'amount': 500, 'badge': '+₹50 Extra'},
-    {'amount': 1000, 'badge': '+₹150 Extra'},
-  ];
+  final TextEditingController _amountController = TextEditingController();
   String _filter = 'all';
 
   @override
@@ -177,7 +171,7 @@ class _WalletScreenState extends State<WalletScreen> {
                           ),
                           const SizedBox(width: 10),
                           const Text(
-                            'Select Recharge Amount',
+                            'Add Money to Wallet',
                             style: TextStyle(
                               fontWeight: FontWeight.w700,
                               fontSize: 16,
@@ -185,76 +179,6 @@ class _WalletScreenState extends State<WalletScreen> {
                             ),
                           ),
                         ],
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Presets Grid
-                      GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          mainAxisSpacing: 10,
-                          crossAxisSpacing: 10,
-                          childAspectRatio: 2.3,
-                        ),
-                        itemCount: _presetPacks.length,
-                        itemBuilder: (context, index) {
-                          final pack = _presetPacks[index];
-                          final amount = pack['amount'] as int;
-                          final badge = pack['badge'] as String;
-                          final isSelected = _amountController.text == amount.toString();
-
-                          return GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _amountController.text = amount.toString();
-                              });
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: isSelected ? AppTheme.cardPurple : AppTheme.surfaceTile,
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: isSelected ? AppTheme.cardLilac : AppTheme.borderSubtle,
-                                  width: 1.2,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    '₹$amount',
-                                    style: TextStyle(
-                                      color: isSelected ? Colors.white : AppTheme.textWhite,
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 17,
-                                    ),
-                                  ),
-                                  if (badge.isNotEmpty)
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: isSelected
-                                            ? Colors.white.withAlpha(50)
-                                            : AppTheme.cardCoral.withAlpha(35),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Text(
-                                        badge,
-                                        style: TextStyle(
-                                          fontSize: 9.5,
-                                          fontWeight: FontWeight.w700,
-                                          color: isSelected ? Colors.white : AppTheme.cardCoral,
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
                       ),
                       const SizedBox(height: 16),
 
@@ -275,7 +199,9 @@ class _WalletScreenState extends State<WalletScreen> {
                             fontSize: 17,
                             fontWeight: FontWeight.bold,
                           ),
-                          labelText: 'Custom Amount',
+                          labelText: 'Enter Amount',
+                          hintText: 'e.g. 500',
+                          hintStyle: const TextStyle(color: AppTheme.textMuted, fontSize: 14),
                           filled: true,
                           fillColor: AppTheme.surfaceTile,
                           border: OutlineInputBorder(
@@ -313,6 +239,7 @@ class _WalletScreenState extends State<WalletScreen> {
                                   }
                                   await appState.rechargeWallet(amount);
                                   if (!context.mounted) return;
+                                  _amountController.clear();
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       content: Text('Recharge of ₹${amount.toStringAsFixed(0)} completed successfully.'),
@@ -333,7 +260,9 @@ class _WalletScreenState extends State<WalletScreen> {
                                     const SizedBox(width: 6),
                                     Flexible(
                                       child: Text(
-                                        'Add ₹${_amountController.text.isNotEmpty ? _amountController.text : "0"} to Wallet',
+                                        _amountController.text.isNotEmpty
+                                            ? 'Add ₹${_amountController.text} to Wallet'
+                                            : 'Add Money to Wallet',
                                         style: const TextStyle(
                                           fontSize: 14.5,
                                           fontWeight: FontWeight.w700,
