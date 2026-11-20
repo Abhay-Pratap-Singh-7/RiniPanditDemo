@@ -77,6 +77,26 @@
 
 ---
 
+## 5. Pandit / Astrologer Portal & Role Selection
+- [x] **5.1 Role-Based Auth & Switching**
+  - [x] Backend role endpoints (`/auth/login`, `/auth/pandit-login`)
+  - [x] Client / Pandit role selection entry screen with cosmic design
+  - [x] One-click role switcher in AppHeader for quick demo walkthrough
+- [x] **5.2 Pandit Dashboard & Consultation Management**
+  - [x] Online/Offline status toggle connected to backend API
+  - [x] Real-time incoming consultation alert banner (WebSocket `consultation:incoming_request`)
+  - [x] Accept & Decline consultation flow
+- [x] **5.3 Pandit Live Consultation Chat**
+  - [x] Displays client birth chart data (DOB, Time, Place of Birth)
+  - [x] Real-time timer and earned revenue ticker (`Earned: ₹...`)
+  - [x] Live WebSocket bidirectional chat messaging
+- [x] **5.4 Pandit Earnings & Session Ledger**
+  - [x] Accumulated net earnings card
+  - [x] Completed sessions and total minutes consulted breakdown
+  - [x] Past consultation logs with duration and payout details
+
+---
+
 ## Milestone Status
 
 | Phase | Description | Status |
