@@ -4,16 +4,20 @@ import { ENV } from './env.js';
 let supabase: SupabaseClient | null = null;
 let supabaseAdmin: SupabaseClient | null = null;
 
-const serviceKey = ENV.SUPABASE_SERVICE_ROLE_KEY || ENV.SUPABASE_ANON_KEY;
-
-if (ENV.SUPABASE_URL && serviceKey) {
-  supabase = createClient(ENV.SUPABASE_URL, serviceKey, {
+if (ENV.SUPABASE_URL && ENV.SUPABASE_ANON_KEY) {
+  supabase = createClient(ENV.SUPABASE_URL, ENV.SUPABASE_ANON_KEY, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
+  console.log('[Supabase] Initialized client successfully with anon key.');
+}
+
+if (ENV.SUPABASE_URL && ENV.SUPABASE_SERVICE_ROLE_KEY) {
+  supabaseAdmin = createClient(ENV.SUPABASE_URL, ENV.SUPABASE_SERVICE_ROLE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  console.log('[Supabase] Initialized admin client with service role key.');
+} else if (supabase) {
   supabaseAdmin = supabase;
-  console.log('[Supabase] Initialized successfully with endpoint:', ENV.SUPABASE_URL);
-} else {
-  console.log('[Supabase] No remote credentials found. Running in hybrid local memory mode.');
 }
 
 export { supabase, supabaseAdmin };

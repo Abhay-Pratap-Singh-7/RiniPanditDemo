@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { supabase, supabaseAdmin } from '../config/supabase.js';
+import { ENV } from '../config/env.js';
 import { store, Profile, Astrologer } from '../services/store.js';
 import { AuthRequest } from '../middleware/auth.middleware.js';
 
@@ -21,7 +22,7 @@ export async function signUp(req: Request, res: Response) {
     if (!email || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Email and password are required for Supabase registration.',
+        message: 'Email and password are required for registration.',
       });
     }
 
@@ -29,8 +30,51 @@ export async function signUp(req: Request, res: Response) {
     let accessToken: string = '';
     let refreshToken: string = '';
 
-    // 1. Supabase Auth Registration
-    if (supabase) {
+    // 1. Try Supabase Admin API first (bypasses Supabase SMTP email rate limits and auto-confirms email)
+    if (ENV.SUPABASE_SERVICE_ROLE_KEY && supabaseAdmin && supabaseAdmin.auth?.admin) {
+      try {
+        const { data: adminData, error: adminError } = await supabaseAdmin.auth.admin.createUser({
+          email,
+          password,
+          email_confirm: true,
+          user_metadata: {
+            full_name: fullName,
+            phone,
+            role,
+          },
+        });
+
+        if (!adminError && adminData?.user) {
+          authUserId = adminData.user.id;
+          if (supabase) {
+            const { data: signInData } = await supabase.auth.signInWithPassword({
+              email,
+              password,
+            });
+            if (signInData?.session) {
+              accessToken = signInData.session.access_token;
+              refreshToken = signInData.session.refresh_token;
+            }
+          }
+          if (!accessToken) {
+            accessToken = `token_${authUserId}`;
+          }
+        } else if (adminError) {
+          const errLower = adminError.message.toLowerCase();
+          if (errLower.includes('already') || errLower.includes('registered')) {
+            return res.status(400).json({
+              success: false,
+              message: 'An account with this email already exists. Please sign in instead.',
+            });
+          }
+        }
+      } catch (adminEx) {
+        // Fall back to standard sign up
+      }
+    }
+
+    // 2. If not created via admin API, use standard Supabase signUp
+    if (!authUserId && supabase) {
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -44,16 +88,21 @@ export async function signUp(req: Request, res: Response) {
       });
 
       if (authError) {
+        let cleanMsg = authError.message;
+        if (cleanMsg.toLowerCase().includes('rate limit')) {
+          cleanMsg =
+            'Email rate limit exceeded. Supabase free tier limits signup emails. Please disable "Confirm email" in Supabase Dashboard (Authentication -> Providers -> Email -> uncheck "Confirm email") or add SUPABASE_SERVICE_ROLE_KEY in Render.';
+        }
         return res.status(400).json({
           success: false,
-          message: authError.message,
+          message: cleanMsg,
         });
       }
 
       if (!authData.user) {
         return res.status(400).json({
           success: false,
-          message: 'Failed to create Supabase user account.',
+          message: 'Failed to create account.',
         });
       }
 
@@ -61,13 +110,12 @@ export async function signUp(req: Request, res: Response) {
       accessToken = authData.session?.access_token || `token_${authUserId}`;
       refreshToken = authData.session?.refresh_token || '';
 
-      // If service role is available and email confirmation is needed, auto-confirm
-      if (supabaseAdmin && (!authData.session || !authData.user.confirmed_at)) {
+      // Auto-confirm if admin client is available
+      if (ENV.SUPABASE_SERVICE_ROLE_KEY && supabaseAdmin && (!authData.session || !authData.user.confirmed_at)) {
         try {
           await supabaseAdmin.auth.admin.updateUserById(authUserId, {
             email_confirm: true,
           });
-          // Re-sign in to get valid session token
           const { data: signInData } = await supabase.auth.signInWithPassword({
             email,
             password,
@@ -76,18 +124,18 @@ export async function signUp(req: Request, res: Response) {
             accessToken = signInData.session.access_token;
             refreshToken = signInData.session.refresh_token;
           }
-        } catch (_) {
-          // Continue with existing token
-        }
+        } catch (_) {}
       }
-    } else {
-      // Local fallback
-      authUserId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-      accessToken = `demo_jwt_token_${authUserId}`;
     }
 
-    // 2. Create User Profile in Supabase & Local Store
-    const initialWalletBalance = role === 'pandit' ? 0.0 : 100.0; // ₹100 Welcome Bonus for users
+    // 3. Fallback if offline
+    if (!authUserId) {
+      authUserId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      accessToken = `token_${authUserId}`;
+    }
+
+    // 4. Create User Profile in Supabase & Local Store
+    const initialWalletBalance = role === 'pandit' ? 0.0 : 100.0;
     const newProfile: Profile = {
       id: authUserId,
       phone,
@@ -103,7 +151,7 @@ export async function signUp(req: Request, res: Response) {
 
     const savedProfile = await store.updateProfile(authUserId, newProfile);
 
-    // 3. If Role is Pandit, create Astrologer Record
+    // 5. If Role is Pandit, create Astrologer Record
     let savedAstrologer: Astrologer | null = null;
     if (role === 'pandit') {
       const newAstrologer: Astrologer = {
@@ -148,7 +196,7 @@ export async function signUp(req: Request, res: Response) {
   } catch (err: any) {
     return res.status(500).json({
       success: false,
-      error: err.message || 'Internal server error during registration.',
+      message: err.message || 'Internal server error during registration.',
     });
   }
 }
@@ -177,9 +225,13 @@ export async function signIn(req: Request, res: Response) {
       });
 
       if (signInError || !signInData.user) {
+        let cleanMsg = signInError?.message || 'Invalid email or password.';
+        if (cleanMsg.toLowerCase().includes('invalid login credentials')) {
+          cleanMsg = 'Invalid email or password. Please verify your credentials or sign up.';
+        }
         return res.status(401).json({
           success: false,
-          message: signInError?.message || 'Invalid email or password.',
+          message: cleanMsg,
         });
       }
 
@@ -231,7 +283,10 @@ export async function signIn(req: Request, res: Response) {
 
 export async function getMe(req: AuthRequest, res: Response) {
   try {
-    const userId = req.user?.id || (req.query.userId as string) || 'a0000000-0000-0000-0000-000000000001';
+    const userId = req.user?.id || (req.query.userId as string);
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Authentication required' });
+    }
     const profile = await store.getProfile(userId);
     const astrologer = await store.getAstrologer(userId);
     const role = astrologer ? 'pandit' : (req.user?.role || 'user');
@@ -240,7 +295,7 @@ export async function getMe(req: AuthRequest, res: Response) {
       success: true,
       user: {
         id: userId,
-        email: req.user?.email || (profile ? `${profile.phone}@rinipandit.com` : 'demo@rinipandit.com'),
+        email: req.user?.email || (profile ? `${profile.phone}@rinipandit.com` : ''),
         phone: profile?.phone,
         role,
       },
@@ -305,7 +360,7 @@ export async function refreshToken(req: Request, res: Response) {
 
     return res.json({
       success: true,
-      token: `demo_jwt_token_${Date.now()}`,
+      token: `token_${Date.now()}`,
     });
   } catch (err: any) {
     return res.status(500).json({

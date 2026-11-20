@@ -99,7 +99,7 @@ class AppState extends ChangeNotifier {
         loadAllHoroscopes(),
       ]);
     } catch (e) {
-      _errorMessage = e.toString();
+      _errorMessage = ApiService.extractErrorMessage(e);
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -234,11 +234,11 @@ class AppState extends ChangeNotifier {
         await loadProfile();
         return true;
       } else {
-        _errorMessage = res['message'] ?? 'Sign up failed';
+        _errorMessage = ApiService.extractErrorMessage(res['message'] ?? 'Sign up failed');
         return false;
       }
     } catch (e) {
-      _errorMessage = e.toString();
+      _errorMessage = ApiService.extractErrorMessage(e);
       return false;
     } finally {
       _isLoading = false;
@@ -283,11 +283,11 @@ class AppState extends ChangeNotifier {
         }
         return true;
       } else {
-        _errorMessage = res['message'] ?? 'Invalid credentials';
+        _errorMessage = ApiService.extractErrorMessage(res['message'] ?? 'Invalid credentials');
         return false;
       }
     } catch (e) {
-      _errorMessage = e.toString();
+      _errorMessage = ApiService.extractErrorMessage(e);
       return false;
     } finally {
       _isLoading = false;
@@ -309,7 +309,7 @@ class AppState extends ChangeNotifier {
       _currentPandit = null;
       _socket.connect(ApiConstants.defaultUserId);
     } catch (e) {
-      _errorMessage = e.toString();
+      _errorMessage = ApiService.extractErrorMessage(e);
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -334,7 +334,7 @@ class AppState extends ChangeNotifier {
         await loadProfile();
       }
     } catch (e) {
-      _errorMessage = e.toString();
+      _errorMessage = ApiService.extractErrorMessage(e);
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -361,7 +361,7 @@ class AppState extends ChangeNotifier {
       );
       notifyListeners();
     } catch (e) {
-      _errorMessage = e.toString();
+      _errorMessage = ApiService.extractErrorMessage(e);
       notifyListeners();
     }
   }
@@ -375,7 +375,7 @@ class AppState extends ChangeNotifier {
       );
       notifyListeners();
     } catch (e) {
-      _errorMessage = e.toString();
+      _errorMessage = ApiService.extractErrorMessage(e);
       notifyListeners();
     }
   }
@@ -408,7 +408,7 @@ class AppState extends ChangeNotifier {
     try {
       _userProfile = await _api.updateUserProfile(data);
     } catch (e) {
-      _errorMessage = e.toString();
+      _errorMessage = ApiService.extractErrorMessage(e);
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -443,7 +443,7 @@ class AppState extends ChangeNotifier {
       }
       await loadTransactions();
     } catch (e) {
-      _errorMessage = e.toString();
+      _errorMessage = ApiService.extractErrorMessage(e);
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -480,7 +480,7 @@ class AppState extends ChangeNotifier {
     try {
       _currentKundli = await _api.generateKundli(birthDetails);
     } catch (e) {
-      _errorMessage = e.toString();
+      _errorMessage = ApiService.extractErrorMessage(e);
     } finally {
       _isLoading = false;
       notifyListeners();

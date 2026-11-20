@@ -60,6 +60,61 @@ class ApiService {
   }
 
   // ==========================================
+  // ERROR EXTRACTION HELPER
+  // ==========================================
+  static String extractErrorMessage(dynamic e) {
+    if (e is DioException) {
+      final res = e.response;
+      if (res?.data != null) {
+        if (res!.data is Map) {
+          final data = res.data as Map;
+          final msg = data['message'] ??
+              data['error_description'] ??
+              data['error'] ??
+              data['msg'] ??
+              data['detail'];
+          if (msg != null && msg.toString().trim().isNotEmpty) {
+            final clean = msg.toString().trim();
+            final lower = clean.toLowerCase();
+            if (lower.contains('rate limit')) {
+              return 'Email rate limit exceeded. Supabase free tier limits signup emails. Please disable "Confirm email" in Supabase (Authentication -> Providers -> Email -> uncheck "Confirm email") or add SUPABASE_SERVICE_ROLE_KEY to Render.';
+            }
+            if (lower.contains('invalid login credentials')) {
+              return 'Invalid email or password. Please verify your credentials or register.';
+            }
+            if (lower.contains('already registered') || lower.contains('already exists')) {
+              return 'An account with this email already exists. Please sign in.';
+            }
+            return clean;
+          }
+        } else if (res.data is String && (res.data as String).trim().isNotEmpty) {
+          final str = (res.data as String).trim();
+          if (!str.startsWith('<') && !str.startsWith('{')) {
+            return str;
+          }
+        }
+      }
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.receiveTimeout) {
+        return 'Connection timed out. Please check your internet connection.';
+      }
+      if (e.type == DioExceptionType.connectionError) {
+        return 'Unable to connect to the server. Please check your internet connection.';
+      }
+      if (e.message != null && e.message!.isNotEmpty && !e.message!.contains('RequestOptions.validateStatus')) {
+        return e.message!;
+      }
+      return 'Request failed with status ${e.response?.statusCode ?? 400}.';
+    }
+    final s = e.toString();
+    if (s.startsWith('Exception: ')) {
+      return s.substring('Exception: '.length);
+    }
+    return s;
+  }
+
+  // ==========================================
   // SUPABASE AUTHENTICATION APIS
   // ==========================================
   Future<Map<String, dynamic>> signUpWithSupabase({
@@ -85,6 +140,9 @@ class ApiService {
         'experienceYears': experienceYears ?? 5,
         'bio': bio ?? '',
       });
+      if (response.data['success'] == false && response.data['message'] != null) {
+        throw Exception(extractErrorMessage(response.data['message']));
+      }
       if (response.data['token'] != null) {
         setAuthToken(response.data['token'] as String);
       }
@@ -102,7 +160,7 @@ class ApiService {
           role: role,
         );
       }
-      rethrow;
+      throw Exception(extractErrorMessage(e));
     }
   }
 
@@ -115,6 +173,9 @@ class ApiService {
         'email': email,
         'password': password,
       });
+      if (response.data['success'] == false && response.data['message'] != null) {
+        throw Exception(extractErrorMessage(response.data['message']));
+      }
       if (response.data['token'] != null) {
         setAuthToken(response.data['token'] as String);
       }
@@ -124,7 +185,7 @@ class ApiService {
         debugPrint('[ApiService] Backend returned 404. Initiating direct Supabase Auth fallback...');
         return await _directSupabaseSignIn(email: email, password: password);
       }
-      rethrow;
+      throw Exception(extractErrorMessage(e));
     }
   }
 
@@ -136,85 +197,93 @@ class ApiService {
     String? phone,
     String role = 'user',
   }) async {
-    final directDio = Dio();
-    final res = await directDio.post(
-      '${ApiConstants.supabaseUrl}/auth/v1/signup',
-      options: Options(
-        headers: {
-          'apikey': ApiConstants.supabaseAnonKey,
-          'Authorization': 'Bearer ${ApiConstants.supabaseAnonKey}',
-          'Content-Type': 'application/json',
+    try {
+      final directDio = Dio();
+      final res = await directDio.post(
+        '${ApiConstants.supabaseUrl}/auth/v1/signup',
+        options: Options(
+          headers: {
+            'apikey': ApiConstants.supabaseAnonKey,
+            'Authorization': 'Bearer ${ApiConstants.supabaseAnonKey}',
+            'Content-Type': 'application/json',
+          },
+        ),
+        data: {
+          'email': email,
+          'password': password,
+          'data': {
+            'full_name': fullName ?? 'Devotee / Client',
+            'phone': phone ?? '+919876543210',
+            'role': role,
+          },
         },
-      ),
-      data: {
-        'email': email,
-        'password': password,
-        'data': {
+      );
+
+      final data = res.data;
+      final token = data['access_token'] ?? data['session']?['access_token'] ?? '';
+      if (token.isNotEmpty) {
+        setAuthToken(token as String);
+      }
+      return {
+        'success': true,
+        'token': token,
+        'user': data['user'] ?? data,
+        'profile': {
+          'id': data['user']?['id'] ?? 'user_registered',
           'full_name': fullName ?? 'Devotee / Client',
           'phone': phone ?? '+919876543210',
-          'role': role,
+          'wallet_balance': role == 'pandit' ? 0.0 : 100.0,
         },
-      },
-    );
-
-    final data = res.data;
-    final token = data['access_token'] ?? data['session']?['access_token'] ?? '';
-    if (token.isNotEmpty) {
-      setAuthToken(token as String);
+        'role': role,
+      };
+    } on DioException catch (e) {
+      throw Exception(extractErrorMessage(e));
     }
-    return {
-      'success': true,
-      'token': token,
-      'user': data['user'] ?? data,
-      'profile': {
-        'id': data['user']?['id'] ?? 'user_registered',
-        'full_name': fullName ?? 'Devotee / Client',
-        'phone': phone ?? '+919876543210',
-        'wallet_balance': role == 'pandit' ? 0.0 : 100.0,
-      },
-      'role': role,
-    };
   }
 
   Future<Map<String, dynamic>> _directSupabaseSignIn({
     required String email,
     required String password,
   }) async {
-    final directDio = Dio();
-    final res = await directDio.post(
-      '${ApiConstants.supabaseUrl}/auth/v1/token?grant_type=password',
-      options: Options(
-        headers: {
-          'apikey': ApiConstants.supabaseAnonKey,
-          'Authorization': 'Bearer ${ApiConstants.supabaseAnonKey}',
-          'Content-Type': 'application/json',
+    try {
+      final directDio = Dio();
+      final res = await directDio.post(
+        '${ApiConstants.supabaseUrl}/auth/v1/token?grant_type=password',
+        options: Options(
+          headers: {
+            'apikey': ApiConstants.supabaseAnonKey,
+            'Authorization': 'Bearer ${ApiConstants.supabaseAnonKey}',
+            'Content-Type': 'application/json',
+          },
+        ),
+        data: {
+          'email': email,
+          'password': password,
         },
-      ),
-      data: {
-        'email': email,
-        'password': password,
-      },
-    );
+      );
 
-    final data = res.data;
-    final token = data['access_token'] ?? '';
-    if (token.isNotEmpty) {
-      setAuthToken(token as String);
+      final data = res.data;
+      final token = data['access_token'] ?? '';
+      if (token.isNotEmpty) {
+        setAuthToken(token as String);
+      }
+      final user = data['user'] ?? {};
+      final role = user['user_metadata']?['role'] ?? 'user';
+      return {
+        'success': true,
+        'token': token,
+        'user': user,
+        'profile': {
+          'id': user['id'] ?? 'user_logged_in',
+          'full_name': user['user_metadata']?['full_name'] ?? 'Devotee',
+          'phone': user['user_metadata']?['phone'] ?? '+919876543210',
+          'wallet_balance': 100.0,
+        },
+        'role': role,
+      };
+    } on DioException catch (e) {
+      throw Exception(extractErrorMessage(e));
     }
-    final user = data['user'] ?? {};
-    final role = user['user_metadata']?['role'] ?? 'user';
-    return {
-      'success': true,
-      'token': token,
-      'user': user,
-      'profile': {
-        'id': user['id'] ?? 'user_logged_in',
-        'full_name': user['user_metadata']?['full_name'] ?? 'Devotee',
-        'phone': user['user_metadata']?['phone'] ?? '+919876543210',
-        'wallet_balance': 100.0,
-      },
-      'role': role,
-    };
   }
 
   Future<Map<String, dynamic>> getMe() async {

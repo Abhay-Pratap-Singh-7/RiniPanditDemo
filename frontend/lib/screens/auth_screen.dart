@@ -106,8 +106,14 @@ class _AuthScreenState extends State<AuthScreen> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(appState.errorMessage ?? 'Authentication failed.'),
+          content: Text(
+            appState.errorMessage ?? 'Authentication failed.',
+            style: const TextStyle(color: Colors.white, fontSize: 13),
+            softWrap: true,
+          ),
           backgroundColor: Theme.of(context).colorScheme.error,
+          duration: const Duration(seconds: 5),
+          behavior: SnackBarBehavior.floating,
         ),
       );
     }
