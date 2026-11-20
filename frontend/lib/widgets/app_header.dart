@@ -9,11 +9,13 @@ import '../screens/profile_screen.dart';
 class AppHeader extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final bool showBalance;
+  final bool showBack;
 
   const AppHeader({
     super.key,
     required this.title,
     this.showBalance = true,
+    this.showBack = false,
   });
 
   @override
@@ -25,9 +27,10 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
     final canPop = Navigator.canPop(context);
 
     return AppBar(
+      automaticallyImplyLeading: false,
       backgroundColor: Colors.transparent,
       elevation: 0,
-      leading: canPop
+      leading: (showBack && canPop)
           ? IconButton(
               icon: const Icon(
                 Icons.arrow_back_ios_new_rounded,
@@ -39,7 +42,7 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
           : null,
       title: Row(
         children: [
-          if (!canPop) ...[
+          if (!showBack || !canPop) ...[
             Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(

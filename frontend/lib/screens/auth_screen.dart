@@ -71,7 +71,10 @@ class _AuthScreenState extends State<AuthScreen> {
         fullName: _nameController.text.trim(),
         phone: _phoneController.text.trim(),
         role: _role,
-        ratePerMinute: rate,
+        ratePerMinute: _role == 'pandit' ? rate : null,
+        specialties: _role == 'pandit' ? const ['Vedic', 'Kundli'] : null,
+        experienceYears: _role == 'pandit' ? 5 : null,
+        bio: _role == 'pandit' ? '' : null,
       );
     } else {
       success = await appState.signInWithSupabase(

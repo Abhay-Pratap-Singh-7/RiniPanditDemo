@@ -129,17 +129,22 @@ class ApiService {
     String? bio,
   }) async {
     try {
-      final response = await _dio.post('/auth/signup', data: {
+      final Map<String, dynamic> requestData = {
         'email': email,
         'password': password,
         'fullName': fullName ?? 'Devotee / Client',
         'phone': phone ?? '+919876543210',
         'role': role,
-        'specialties': specialties ?? ['Vedic', 'Kundli'],
-        'ratePerMinute': ratePerMinute ?? 25.0,
-        'experienceYears': experienceYears ?? 5,
-        'bio': bio ?? '',
-      });
+      };
+
+      if (role == 'pandit') {
+        if (specialties != null) requestData['specialties'] = specialties;
+        if (ratePerMinute != null) requestData['ratePerMinute'] = ratePerMinute;
+        if (experienceYears != null) requestData['experienceYears'] = experienceYears;
+        if (bio != null && bio.isNotEmpty) requestData['bio'] = bio;
+      }
+
+      final response = await _dio.post('/auth/signup', data: requestData);
       if (response.data['success'] == false && response.data['message'] != null) {
         throw Exception(extractErrorMessage(response.data['message']));
       }
@@ -158,6 +163,10 @@ class ApiService {
           fullName: fullName,
           phone: phone,
           role: role,
+          specialties: specialties,
+          ratePerMinute: ratePerMinute,
+          experienceYears: experienceYears,
+          bio: bio,
         );
       }
       throw Exception(extractErrorMessage(e));
@@ -196,9 +205,26 @@ class ApiService {
     String? fullName,
     String? phone,
     String role = 'user',
+    List<String>? specialties,
+    double? ratePerMinute,
+    int? experienceYears,
+    String? bio,
   }) async {
     try {
       final directDio = Dio();
+      final Map<String, dynamic> metadata = {
+        'full_name': fullName ?? 'Devotee / Client',
+        'phone': phone ?? '+919876543210',
+        'role': role,
+      };
+
+      if (role == 'pandit') {
+        if (specialties != null) metadata['specialties'] = specialties;
+        if (ratePerMinute != null) metadata['rate_per_minute'] = ratePerMinute;
+        if (experienceYears != null) metadata['experience_years'] = experienceYears;
+        if (bio != null && bio.isNotEmpty) metadata['bio'] = bio;
+      }
+
       final res = await directDio.post(
         '${ApiConstants.supabaseUrl}/auth/v1/signup',
         options: Options(
@@ -211,11 +237,7 @@ class ApiService {
         data: {
           'email': email,
           'password': password,
-          'data': {
-            'full_name': fullName ?? 'Devotee / Client',
-            'phone': phone ?? '+919876543210',
-            'role': role,
-          },
+          'data': metadata,
         },
       );
 

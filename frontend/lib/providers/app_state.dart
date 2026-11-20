@@ -208,10 +208,10 @@ class AppState extends ChangeNotifier {
         fullName: fullName,
         phone: phone,
         role: role,
-        specialties: specialties,
-        ratePerMinute: ratePerMinute,
-        experienceYears: experienceYears,
-        bio: bio,
+        specialties: role == 'pandit' ? specialties : null,
+        ratePerMinute: role == 'pandit' ? ratePerMinute : null,
+        experienceYears: role == 'pandit' ? experienceYears : null,
+        bio: role == 'pandit' ? bio : null,
       );
 
       if (res['success'] == true) {
@@ -232,6 +232,9 @@ class AppState extends ChangeNotifier {
         _socket.connect(uid.toString());
 
         await loadProfile();
+        if (isPandit) {
+          await loadPanditData(_currentPandit?.id ?? _userProfile?.id);
+        }
         return true;
       } else {
         _errorMessage = ApiService.extractErrorMessage(res['message'] ?? 'Sign up failed');
@@ -343,7 +346,8 @@ class AppState extends ChangeNotifier {
 
   // Pandit Operations
   Future<void> loadPanditData([String? id]) async {
-    final panditId = id ?? _currentPandit?.id ?? 'b0000000-0000-0000-0000-000000000001';
+    final panditId = id ?? _currentPandit?.id ?? _userProfile?.id ?? _currentUser?['id'];
+    if (panditId == null) return;
     try {
       _currentPandit = await _api.getPanditProfile(panditId);
       _panditEarnings = await _api.getPanditEarnings(panditId);
