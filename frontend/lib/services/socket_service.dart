@@ -27,15 +27,16 @@ class SocketService {
   bool _isConnected = false;
   bool get isConnected => _isConnected;
 
-  void connect([String userId = ApiConstants.defaultUserId]) {
-    if (_isConnected && _currentUserId == userId) return;
+  void connect([String? userId]) {
+    final uid = userId ?? _currentUserId ?? ApiConstants.defaultUserId;
+    if (_isConnected && _currentUserId == uid) return;
 
     if (_isConnected) {
       disconnect();
     }
 
-    _currentUserId = userId;
-    final uri = Uri.parse('${ApiConstants.wsUrl}?userId=$userId');
+    _currentUserId = uid;
+    final uri = Uri.parse('${ApiConstants.wsUrl}?userId=$uid');
     try {
       _channel = WebSocketChannel.connect(uri);
       _isConnected = true;
@@ -84,30 +85,54 @@ class SocketService {
   }
 
   void initiateConsultation(String astrologerId) {
-    if (!_isConnected) connect();
-    _channel?.sink.add(jsonEncode({
+    final payload = jsonEncode({
       'event': 'consultation:initiate',
       'data': {'astrologerId': astrologerId},
-    }));
+    });
+
+    if (!_isConnected) {
+      connect();
+      Future.delayed(const Duration(milliseconds: 300), () {
+        _channel?.sink.add(payload);
+      });
+      return;
+    }
+    _channel?.sink.add(payload);
   }
 
   void acceptConsultation(String sessionId) {
-    if (!_isConnected) connect();
-    _channel?.sink.add(jsonEncode({
+    final payload = jsonEncode({
       'event': 'consultation:accept',
       'data': {'sessionId': sessionId},
-    }));
+    });
+
+    if (!_isConnected) {
+      connect();
+      Future.delayed(const Duration(milliseconds: 300), () {
+        _channel?.sink.add(payload);
+      });
+      return;
+    }
+    _channel?.sink.add(payload);
   }
 
   void sendMessage(String sessionId, String content) {
-    if (!_isConnected) connect();
-    _channel?.sink.add(jsonEncode({
+    final payload = jsonEncode({
       'event': 'chat:send',
       'data': {
         'sessionId': sessionId,
         'content': content,
       },
-    }));
+    });
+
+    if (!_isConnected) {
+      connect();
+      Future.delayed(const Duration(milliseconds: 300), () {
+        _channel?.sink.add(payload);
+      });
+      return;
+    }
+    _channel?.sink.add(payload);
   }
 
   void endConsultation(String sessionId) {

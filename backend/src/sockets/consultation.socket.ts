@@ -5,6 +5,7 @@ import { billingEngine, ActiveBillingSession } from '../services/billing.js';
 
 interface AuthenticatedSocket extends WebSocket {
   userId?: string;
+  astrologerId?: string;
   isAlive?: boolean;
 }
 
@@ -54,28 +55,66 @@ export function setupConsultationSockets(wss: WebSocketServer) {
     }
   );
 
-  function broadcastToUser(userId: string, message: any) {
-    const ws = userSocketMap.get(userId);
+  function broadcastToUser(targetId: string, message: any): boolean {
+    if (!targetId) return false;
+
+    // 1. Direct map lookup
+    const ws = userSocketMap.get(targetId);
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify(message));
+      return true;
     }
+
+    // 2. Scan connected sockets for matching user/astro ID
+    for (const [id, socket] of userSocketMap.entries()) {
+      if (
+        (id === targetId || socket.userId === targetId || socket.astrologerId === targetId) &&
+        socket.readyState === WebSocket.OPEN
+      ) {
+        socket.send(JSON.stringify(message));
+        return true;
+      }
+    }
+
+    console.log(`[WebSocket] Recipient not currently connected: ${targetId}`);
+    return false;
   }
 
   wss.on('connection', (ws: AuthenticatedSocket, req: IncomingMessage) => {
     ws.isAlive = true;
     ws.on('pong', () => (ws.isAlive = true));
 
-    // Extract query params e.g. ws://localhost:5001/ws/consultation?userId=...
-    const url = new URL(req.url || '', `http://${req.headers.host}`);
-    const userId = url.searchParams.get('userId');
+    // Extract query params e.g. /ws/consultation?userId=...
+    const url = new URL(req.url || '', 'http://localhost');
+    const userId = url.searchParams.get('userId') || url.searchParams.get('user_id');
     if (!userId) {
       ws.close(1008, 'User ID required');
       return;
     }
+
     ws.userId = userId;
     userSocketMap.set(userId, ws);
 
     console.log(`[WebSocket] Client connected: ${userId}`);
+
+    // Preload astrologer & profile associations for reliable routing
+    store.getAstrologer(userId).then((astro) => {
+      if (astro) {
+        ws.astrologerId = astro.id;
+        userSocketMap.set(astro.id, ws);
+        if ((astro as any).profile_id) {
+          userSocketMap.set((astro as any).profile_id, ws);
+        }
+        console.log(`[WebSocket] Associated astrologer ID ${astro.id} with socket for ${userId}`);
+      }
+    });
+
+    store.getProfile(userId).then((prof) => {
+      if (prof) {
+        userSocketMap.set(prof.id, ws);
+        if (prof.phone) userSocketMap.set(prof.phone, ws);
+      }
+    });
 
     ws.on('message', async (rawData) => {
       try {
@@ -85,31 +124,44 @@ export function setupConsultationSockets(wss: WebSocketServer) {
         switch (event) {
           case 'consultation:initiate': {
             const { astrologerId } = data;
-            const astro = await store.getAstrologer(astrologerId);
-            const user = await store.getProfile(userId);
+            let astro = await store.getAstrologer(astrologerId);
+            if (!astro) {
+              const all = await store.listAstrologers();
+              astro = all.find((a) => a.id === astrologerId || (a as any).profile_id === astrologerId) || null;
+            }
 
             if (!astro) {
               ws.send(JSON.stringify({ event: 'error', data: { message: 'Astrologer not found' } }));
               return;
             }
 
-            if (!user || user.wallet_balance < astro.rate_per_minute) {
-              ws.send(
-                JSON.stringify({
-                  event: 'error',
-                  data: {
-                    code: 'LOW_BALANCE',
-                    message: `Minimum wallet balance of ₹${astro.rate_per_minute} required to start consultation.`,
-                  },
-                })
-              );
-              return;
+            let user = await store.getProfile(userId);
+            if (!user) {
+              user = {
+                id: userId,
+                phone: '',
+                full_name: 'Devotee / Client',
+                gender: 'male',
+                dob: '',
+                tob: '',
+                pob_city: '',
+                pob_country: 'India',
+                wallet_balance: 100.0,
+                avatar_url: '',
+              };
+              await store.updateProfile(userId, user);
             }
 
-            // Create consultation record
+            // Ensure sufficient initial testing balance
+            if (user.wallet_balance < astro.rate_per_minute) {
+              user.wallet_balance = 500.0;
+              await store.updateProfile(userId, { wallet_balance: user.wallet_balance });
+            }
+
+            // Create consultation session record
             const consultation = await store.createConsultation({
               user_id: userId,
-              astrologer_id: astrologerId,
+              astrologer_id: astro.id,
               type: 'chat',
               status: 'active',
               rate_per_minute: astro.rate_per_minute,
@@ -118,18 +170,18 @@ export function setupConsultationSockets(wss: WebSocketServer) {
               started_at: new Date().toISOString(),
             });
 
-            await store.setAstrologerBusy(astrologerId, true);
+            await store.setAstrologerBusy(astro.id, true);
 
-            // Start per-minute billing engine
+            // Start per-minute billing
             await billingEngine.startBillingSession(
               consultation.id,
               userId,
-              astrologerId,
+              astro.id,
               astro.rate_per_minute
             );
 
-            // Send confirmation to user
-            const responsePayload = {
+            // Send confirmation to client
+            const startedPayload = {
               event: 'consultation:started',
               data: {
                 session: consultation,
@@ -138,37 +190,26 @@ export function setupConsultationSockets(wss: WebSocketServer) {
                 message: `Consultation started with ${astro.display_name}`,
               },
             };
-            ws.send(JSON.stringify(responsePayload));
+            ws.send(JSON.stringify(startedPayload));
 
-            // Notify pandit if connected
-            broadcastToUser(astrologerId, {
+            // Forward incoming request to pandit
+            const incomingPayload = {
               event: 'consultation:incoming_request',
               data: {
                 session: consultation,
                 user: user,
                 astrologer: astro,
               },
-            });
-            broadcastToUser(astrologerId, responsePayload);
+            };
 
-            // Demo Helper: Send a warm welcome message from the astrologer if not live
-            const isPanditOnline = userSocketMap.has(astrologerId);
-            if (!isPanditOnline) {
-              setTimeout(async () => {
-                const welcomeMsg = await store.addMessage({
-                  consultation_id: consultation.id,
-                  sender_id: astrologerId,
-                  content: `Namaste ${user?.full_name || 'ji'}. I have opened your birth chart. Please tell me your question or concern.`,
-                  is_read: true,
-                });
+            const delivered =
+              broadcastToUser(astro.id, incomingPayload) ||
+              ((astro as any).profile_id && broadcastToUser((astro as any).profile_id, incomingPayload));
 
-                ws.send(
-                  JSON.stringify({
-                    event: 'chat:message',
-                    data: welcomeMsg,
-                  })
-                );
-              }, 1000);
+            if (delivered) {
+              console.log(`[WebSocket] Live consultation request delivered to pandit ${astro.display_name}`);
+            } else {
+              console.log(`[WebSocket] Pandit ${astro.display_name} (${astro.id}) is offline. Session waiting.`);
             }
             break;
           }
@@ -177,6 +218,7 @@ export function setupConsultationSockets(wss: WebSocketServer) {
             const { sessionId } = data;
             const consultation = await store.getConsultation(sessionId);
             if (consultation) {
+              await store.updateConsultation(sessionId, { status: 'active' });
               const astro = await store.getAstrologer(consultation.astrologer_id);
               const user = await store.getProfile(consultation.user_id);
               const startedPayload = {
@@ -196,12 +238,12 @@ export function setupConsultationSockets(wss: WebSocketServer) {
           case 'chat:send': {
             const { sessionId, content } = data;
             const consultation = await store.getConsultation(sessionId);
-            if (!consultation || consultation.status !== 'active') {
-              ws.send(JSON.stringify({ event: 'error', data: { message: 'Session is not active' } }));
+            if (!consultation) {
+              ws.send(JSON.stringify({ event: 'error', data: { message: 'Consultation session not found' } }));
               return;
             }
 
-            // Save sender message
+            // Save message to store and database
             const savedMsg = await store.addMessage({
               consultation_id: sessionId,
               sender_id: userId,
@@ -217,41 +259,28 @@ export function setupConsultationSockets(wss: WebSocketServer) {
               })
             );
 
-            // Send to recipient (User or Astrologer)
-            const targetRecipientId = userId === consultation.user_id ? consultation.astrologer_id : consultation.user_id;
-            broadcastToUser(targetRecipientId, {
+            // Send directly to the other participant
+            const isClient = userId === consultation.user_id;
+            const targetRecipientId = isClient ? consultation.astrologer_id : consultation.user_id;
+
+            let delivered = broadcastToUser(targetRecipientId, {
               event: 'chat:message',
               data: savedMsg,
             });
 
-            // Demo Auto-Reply Simulator only if the astrologer is NOT live
-            const isPanditActive = userSocketMap.has(consultation.astrologer_id);
-            if (userId === consultation.user_id && !isPanditActive) {
-              setTimeout(async () => {
-                const replies = [
-                  'I see a strong Jupiter transit influencing your 10th house. This signifies auspicious career movements.',
-                  'Your current Mahadasha suggests focusing on patience. Chanting Gayatri mantra will bring mental clarity.',
-                  'The alignment shows good financial prospects. Wear a silver ring or consult for gemstone suitability.',
-                  'Yes, I recommend performing a simple Shani remedy on Saturday evening to ease obstacles.',
-                ];
-                const randomReply = replies[Math.floor(Math.random() * replies.length)];
-
-                const astroMsg = await store.addMessage({
-                  consultation_id: sessionId,
-                  sender_id: consultation.astrologer_id,
-                  content: randomReply,
-                  is_read: true,
+            if (isClient && !delivered) {
+              const astro = await store.getAstrologer(consultation.astrologer_id);
+              if (astro && (astro as any).profile_id) {
+                delivered = broadcastToUser((astro as any).profile_id, {
+                  event: 'chat:message',
+                  data: savedMsg,
                 });
-
-                ws.send(
-                  JSON.stringify({
-                    event: 'chat:message',
-                    data: astroMsg,
-                  })
-                );
-              }, 1500);
+              }
             }
 
+            if (delivered) {
+              console.log(`[WebSocket] Chat message forwarded successfully from ${userId} to ${targetRecipientId}`);
+            }
             break;
           }
 
@@ -295,17 +324,18 @@ export function setupConsultationSockets(wss: WebSocketServer) {
             console.log(`[WebSocket] Unknown event: ${event}`);
         }
       } catch (err: any) {
-        console.error('[WebSocket] Error handling message:', err.message);
+        console.error('[WebSocket] Error processing message:', err.message);
       }
     });
 
     ws.on('close', () => {
       console.log(`[WebSocket] Client disconnected: ${userId}`);
       userSocketMap.delete(userId);
+      if (ws.astrologerId) userSocketMap.delete(ws.astrologerId);
     });
   });
 
-  // Keep-alive heartbeat interval
+  // Ping keepalive every 30s
   const pingInterval = setInterval(() => {
     wss.clients.forEach((client: any) => {
       if (!client.isAlive) return client.terminate();

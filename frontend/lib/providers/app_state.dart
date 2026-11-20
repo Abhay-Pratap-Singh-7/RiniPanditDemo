@@ -431,8 +431,20 @@ class AppState extends ChangeNotifier {
 
   void acceptIncomingRequest() {
     if (_incomingRequest != null) {
-      final sessionId = _incomingRequest!['session']['id'];
-      _socket.acceptConsultation(sessionId);
+      final sessionMap = _incomingRequest!['session'];
+      if (sessionMap is Map<String, dynamic>) {
+        _activeSession = ConsultationSession.fromJson(sessionMap);
+      }
+      if (_incomingRequest!['user'] is Map<String, dynamic>) {
+        _activeConsultationUser = UserProfile.fromJson(_incomingRequest!['user']);
+      }
+      if (_incomingRequest!['astrologer'] is Map<String, dynamic>) {
+        _activeAstrologer = Astrologer.fromJson(_incomingRequest!['astrologer']);
+      }
+      final sessionId = sessionMap?['id'];
+      if (sessionId != null) {
+        _socket.acceptConsultation(sessionId.toString());
+      }
       _incomingRequest = null;
       notifyListeners();
     }

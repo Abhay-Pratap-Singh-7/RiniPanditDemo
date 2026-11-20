@@ -85,9 +85,13 @@ class _PanditChatScreenState extends State<PanditChatScreen> {
                         ),
                       ),
                       const SizedBox(width: 5),
-                      Text(
-                        'Live Client Session • ₹${session?.ratePerMinute.toStringAsFixed(0) ?? "35"}/min',
-                        style: const TextStyle(fontSize: 11, color: AppTheme.cardLilac),
+                      Expanded(
+                        child: Text(
+                          'Live Client Session • ₹${session?.ratePerMinute.toStringAsFixed(0) ?? "25"}/min',
+                          style: const TextStyle(fontSize: 11, color: AppTheme.cardLilac),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ],
                   ),

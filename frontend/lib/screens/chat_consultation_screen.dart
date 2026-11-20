@@ -92,9 +92,13 @@ class _ChatConsultationScreenState extends State<ChatConsultationScreen> {
                         ),
                       ),
                       const SizedBox(width: 5),
-                      Text(
-                        'Live Consultation • ₹${widget.astrologer.ratePerMinute.toStringAsFixed(0)}/min',
-                        style: const TextStyle(fontSize: 11, color: AppTheme.cardLilac),
+                      Expanded(
+                        child: Text(
+                          'Live Consultation • ₹${widget.astrologer.ratePerMinute.toStringAsFixed(0)}/min',
+                          style: const TextStyle(fontSize: 11, color: AppTheme.cardLilac),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ],
                   ),
