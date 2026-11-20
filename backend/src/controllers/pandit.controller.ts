@@ -23,16 +23,29 @@ export async function getPanditProfile(req: Request, res: Response) {
 
 export async function updatePanditStatus(req: Request, res: Response) {
   try {
-    const { id = 'b0000000-0000-0000-0000-000000000001', isOnline, isBusy, ratePerMinute } = req.body;
+    const {
+      id = 'b0000000-0000-0000-0000-000000000001',
+      isOnline,
+      isBusy,
+      ratePerMinute,
+      bio,
+      specialties,
+      experienceYears,
+      displayName,
+    } = req.body;
     const updates: any = {};
     if (isOnline !== undefined) updates.is_online = isOnline;
     if (isBusy !== undefined) updates.is_busy = isBusy;
-    if (ratePerMinute !== undefined) updates.rate_per_minute = ratePerMinute;
+    if (ratePerMinute !== undefined) updates.rate_per_minute = Number(ratePerMinute);
+    if (bio !== undefined) updates.bio = bio;
+    if (specialties !== undefined) updates.specialties = Array.isArray(specialties) ? specialties : [specialties];
+    if (experienceYears !== undefined) updates.experience_years = Number(experienceYears);
+    if (displayName !== undefined) updates.display_name = displayName;
 
     const updated = await store.updateAstrologer(id, updates);
     res.json({ success: true, data: updated });
   } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ success: false, message: err.message });
   }
 }
 

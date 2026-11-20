@@ -205,7 +205,32 @@ class DataStore {
 
   async updateAstrologer(id: string, updates: Partial<Astrologer>): Promise<Astrologer | null> {
     const astro = await this.getAstrologer(id);
-    if (!astro) return null;
+    if (!astro) {
+      const profile = await this.getProfile(id);
+      const newAstro: Astrologer = {
+        id,
+        display_name: profile?.full_name || 'Acharya',
+        specialties: ['Vedic', 'Kundli'],
+        languages: ['Hindi', 'English'],
+        experience_years: 5,
+        rate_per_minute: 25.0,
+        rating: 5.0,
+        total_reviews: 0,
+        is_online: true,
+        is_busy: false,
+        bio: '',
+        avatar_url: profile?.avatar_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
+        ...updates,
+      };
+      this.astrologers.set(id, newAstro);
+      if (supabase) {
+        await supabase.from('astrologers').upsert({
+          ...newAstro,
+          profile_id: id,
+        });
+      }
+      return newAstro;
+    }
     const updated = { ...astro, ...updates };
     this.astrologers.set(id, updated);
     if (supabase) {

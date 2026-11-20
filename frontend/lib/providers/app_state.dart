@@ -389,6 +389,37 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  Future<bool> updatePanditProfile({
+    required double ratePerMinute,
+    required String bio,
+    required List<String> specialties,
+    int? experienceYears,
+  }) async {
+    final pid = _currentPandit?.id ?? _userProfile?.id ?? _currentUser?['id'];
+    if (pid == null) return false;
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      _currentPandit = await _api.updatePanditStatus(
+        id: pid,
+        ratePerMinute: ratePerMinute,
+        bio: bio,
+        specialties: specialties,
+        experienceYears: experienceYears,
+      );
+      await loadPanditData(pid);
+      return true;
+    } catch (e) {
+      _errorMessage = ApiService.extractErrorMessage(e);
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   void acceptIncomingRequest() {
     if (_incomingRequest != null) {
       final sessionId = _incomingRequest!['session']['id'];

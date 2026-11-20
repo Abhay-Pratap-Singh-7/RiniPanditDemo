@@ -5,6 +5,7 @@ import '../providers/app_state.dart';
 import '../widgets/cosmic_scaffold.dart';
 import 'home_screen.dart';
 import 'pandit/pandit_dashboard_screen.dart';
+import 'pandit/pandit_profile_setup_screen.dart';
 
 class AuthScreen extends StatefulWidget {
   final String initialRole;
@@ -23,7 +24,6 @@ class _AuthScreenState extends State<AuthScreen> {
   final _passwordController = TextEditingController();
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _rateController = TextEditingController(text: '25');
 
   bool _obscurePassword = true;
 
@@ -39,7 +39,6 @@ class _AuthScreenState extends State<AuthScreen> {
     _passwordController.dispose();
     _nameController.dispose();
     _phoneController.dispose();
-    _rateController.dispose();
     super.dispose();
   }
 
@@ -64,17 +63,12 @@ class _AuthScreenState extends State<AuthScreen> {
 
     bool success;
     if (_isSignUp) {
-      final rate = double.tryParse(_rateController.text.trim()) ?? 25.0;
       success = await appState.signUpWithSupabase(
         email: email,
         password: password,
         fullName: _nameController.text.trim(),
         phone: _phoneController.text.trim(),
         role: _role,
-        ratePerMinute: _role == 'pandit' ? rate : null,
-        specialties: _role == 'pandit' ? const ['Vedic', 'Kundli'] : null,
-        experienceYears: _role == 'pandit' ? 5 : null,
-        bio: _role == 'pandit' ? '' : null,
       );
     } else {
       success = await appState.signInWithSupabase(
@@ -89,13 +83,18 @@ class _AuthScreenState extends State<AuthScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            _isSignUp ? 'Account created successfully with Supabase.' : 'Signed in successfully.',
+            _isSignUp ? 'Account created successfully.' : 'Signed in successfully.',
           ),
           backgroundColor: AppTheme.cardPurple,
         ),
       );
 
-      if (appState.isPandit) {
+      if (_isSignUp && appState.isPandit) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const PanditProfileSetupScreen()),
+        );
+      } else if (appState.isPandit) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const PanditDashboardScreen()),
@@ -296,26 +295,6 @@ class _AuthScreenState extends State<AuthScreen> {
                           ),
                         ),
                         const SizedBox(height: 14),
-
-                        if (_role == 'pandit') ...[
-                          // Rate Per Minute
-                          TextField(
-                            controller: _rateController,
-                            keyboardType: TextInputType.number,
-                            style: const TextStyle(color: Colors.white, fontSize: 14),
-                            decoration: InputDecoration(
-                              labelText: 'Consultation Rate (₹ / min)',
-                              prefixIcon: const Icon(Icons.currency_rupee_rounded, color: AppTheme.cardLilac, size: 20),
-                              filled: true,
-                              fillColor: AppTheme.surfaceTile,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(16),
-                                borderSide: const BorderSide(color: AppTheme.borderSubtle),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-                        ],
                       ],
 
                       // Email Address

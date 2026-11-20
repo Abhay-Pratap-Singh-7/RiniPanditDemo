@@ -374,11 +374,17 @@ class ApiService {
     bool? isOnline,
     bool? isBusy,
     double? ratePerMinute,
+    String? bio,
+    List<String>? specialties,
+    int? experienceYears,
   }) async {
     final Map<String, dynamic> body = {'id': id};
     if (isOnline != null) body['isOnline'] = isOnline;
     if (isBusy != null) body['isBusy'] = isBusy;
     if (ratePerMinute != null) body['ratePerMinute'] = ratePerMinute;
+    if (bio != null) body['bio'] = bio;
+    if (specialties != null) body['specialties'] = specialties;
+    if (experienceYears != null) body['experienceYears'] = experienceYears;
     final response = await _dio.put('/pandit/status', data: body);
     return Astrologer.fromJson(response.data['data']);
   }
