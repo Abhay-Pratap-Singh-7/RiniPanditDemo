@@ -135,6 +135,18 @@ class FeaturedStoryCard extends StatelessWidget {
                 ),
               ),
             ),
+
+            // Top Border Layer: ensures overlays never bleed over the border
+            Positioned.fill(
+              child: IgnorePointer(
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: AppTheme.cardRadius,
+                    border: Border.all(color: Colors.white.withAlpha(40), width: 1.2),
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),
