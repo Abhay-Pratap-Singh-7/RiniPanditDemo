@@ -107,7 +107,9 @@ class _PanditDashboardScreenState extends State<PanditDashboardScreen> {
     final expYears = pandit?.experienceYears ?? 5;
     final ratePerMin = pandit?.ratePerMinute ?? 25.0;
 
-    final totalEarned = (earnings['totalEarned'] as num?)?.toDouble() ?? 0.0;
+    final totalEarned = (earnings['totalEarned'] as num?)?.toDouble() ??
+        ((earnings['walletBalance'] as num?)?.toDouble() ??
+            (appState.userProfile?.walletBalance ?? 0.0));
     final totalMinutes = (earnings['totalMinutes'] as num?)?.toInt() ?? 0;
     final completedSessions = (earnings['completedSessions'] as num?)?.toInt() ?? appState.panditSessions.length;
 

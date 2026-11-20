@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'core/theme/app_theme.dart';
 import 'providers/app_state.dart';
-import 'screens/auth_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/pandit/pandit_dashboard_screen.dart';
-import 'widgets/cosmic_scaffold.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -39,18 +37,6 @@ class AppRoot extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
-
-    if (appState.isRestoringSession) {
-      return const CosmicScaffold(
-        body: Center(
-          child: CircularProgressIndicator(color: AppTheme.cardPurple),
-        ),
-      );
-    }
-
-    if (!appState.isAuthenticated) {
-      return const AuthScreen();
-    }
 
     if (appState.isPandit) {
       return const PanditDashboardScreen();

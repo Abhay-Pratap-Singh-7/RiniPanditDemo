@@ -285,33 +285,62 @@ class DataStore {
   }
 
   async getConsultationsByAstrologer(astrologerId: string): Promise<Consultation[]> {
+    const astro = await this.getAstrologer(astrologerId);
+    const candidateIds = new Set<string>();
+    if (astrologerId) candidateIds.add(astrologerId);
+    if (astro) {
+      if (astro.id) candidateIds.add(astro.id);
+      if ((astro as any).profile_id) candidateIds.add((astro as any).profile_id);
+    }
+    const ids = Array.from(candidateIds);
+
     const db = getDbClient();
     if (db) {
       try {
         const { data, error } = await db
           .from('consultations')
           .select('*')
-          .eq('astrologer_id', astrologerId)
+          .in('astrologer_id', ids)
           .order('created_at', { ascending: false });
         if (error) console.error('[Supabase Error] getConsultationsByAstrologer:', error.message);
-        if (data) return data as Consultation[];
+        if (data && data.length > 0) return data as Consultation[];
       } catch (_) {}
     }
     return Array.from(this.consultations.values())
-      .filter((c) => c.astrologer_id === astrologerId)
+      .filter((c) => candidateIds.has(c.astrologer_id))
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   }
 
   async getAstrologerEarnings(astrologerId: string) {
     const sessions = await this.getConsultationsByAstrologer(astrologerId);
-    const totalMinutes = sessions.reduce((acc, s) => acc + Math.ceil(s.duration_seconds / 60), 0);
-    const totalEarned = sessions.reduce((acc, s) => acc + (s.total_deducted || 0), 0);
+    const totalMinutes = sessions.reduce((acc, s) => acc + Math.ceil((s.duration_seconds || 0) / 60), 0);
+    const totalEarnedFromSessions = sessions.reduce((acc, s) => acc + (s.total_deducted || 0), 0);
+
+    const astro = await this.getAstrologer(astrologerId);
+    const candidateIds = new Set<string>();
+    if (astrologerId) candidateIds.add(astrologerId);
+    if (astro) {
+      if (astro.id) candidateIds.add(astro.id);
+      if ((astro as any).profile_id) candidateIds.add((astro as any).profile_id);
+    }
+
+    let maxWalletBalance = 0;
+    for (const pid of candidateIds) {
+      const p = await this.getProfile(pid);
+      if (p && Number(p.wallet_balance || 0) > maxWalletBalance) {
+        maxWalletBalance = Number(p.wallet_balance || 0);
+      }
+    }
+
+    const totalEarned = Math.max(totalEarnedFromSessions, maxWalletBalance);
+
     return {
       astrologerId,
       totalEarned,
       totalMinutes,
       completedSessions: sessions.filter((s) => s.status === 'completed').length,
       recentSessions: sessions.slice(0, 10),
+      walletBalance: maxWalletBalance,
     };
   }
 
@@ -389,46 +418,54 @@ class DataStore {
 
     // 2. Credit pandit account
     const astro = await this.getAstrologer(astrologerId);
-    const panditProfileId = (astro as any)?.profile_id || astrologerId;
-    let panditProfile = await this.getProfile(panditProfileId);
-    if (!panditProfile && astrologerId !== panditProfileId) {
-      panditProfile = await this.getProfile(astrologerId);
+    const candidateIds = new Set<string>();
+    if (astrologerId) candidateIds.add(astrologerId);
+    if (astro) {
+      if (astro.id) candidateIds.add(astro.id);
+      if ((astro as any).profile_id) candidateIds.add((astro as any).profile_id);
     }
 
-    if (!panditProfile) {
-      panditProfile = {
-        id: panditProfileId,
-        phone: '',
-        full_name: astro?.display_name || 'Acharya',
-        gender: 'male',
-        dob: '',
-        tob: '',
-        pob_city: '',
-        pob_country: 'India',
-        wallet_balance: 0,
-        avatar_url: astro?.avatar_url || '',
+    let panditWalletBalance = 0;
+    const creditTxs: WalletTransaction[] = [];
+
+    for (const pid of candidateIds) {
+      let p = await this.getProfile(pid);
+      if (!p) {
+        p = {
+          id: pid,
+          phone: '',
+          full_name: astro?.display_name || 'Acharya',
+          gender: 'male',
+          dob: '',
+          tob: '',
+          pob_city: '',
+          pob_country: 'India',
+          wallet_balance: 0,
+          avatar_url: astro?.avatar_url || '',
+        };
+      }
+      p.wallet_balance = Number((Number(p.wallet_balance || 0) + amount).toFixed(2));
+      await this.updateProfile(pid, { wallet_balance: p.wallet_balance });
+      panditWalletBalance = p.wallet_balance;
+
+      const creditTx: WalletTransaction = {
+        id: `tx_${Date.now() + 1}_${Math.random().toString(36).substring(2, 7)}`,
+        user_id: pid,
+        amount: amount,
+        type: 'consultation_credit',
+        reference_id: sessionId,
+        description: `Consultation Earning from ${clientProfile.full_name || 'Client'}`,
+        balance_after: p.wallet_balance,
+        created_at: new Date().toISOString(),
       };
+      this.transactions.unshift(creditTx);
+      creditTxs.push(creditTx);
     }
-
-    panditProfile.wallet_balance = Number((Number(panditProfile.wallet_balance || 0) + amount).toFixed(2));
-    await this.updateProfile(panditProfile.id, { wallet_balance: panditProfile.wallet_balance });
-
-    const creditTx: WalletTransaction = {
-      id: `tx_${Date.now() + 1}_${Math.random().toString(36).substring(2, 7)}`,
-      user_id: panditProfile.id,
-      amount: amount,
-      type: 'consultation_credit',
-      reference_id: sessionId,
-      description: `Consultation Earning from ${clientProfile.full_name || 'Client'}`,
-      balance_after: panditProfile.wallet_balance,
-      created_at: new Date().toISOString(),
-    };
-    this.transactions.unshift(creditTx);
 
     const db = getDbClient();
     if (db) {
       try {
-        await db.from('wallet_transactions').insert([debitTx, creditTx]);
+        await db.from('wallet_transactions').insert([debitTx, ...creditTxs]);
       } catch (err: any) {
         console.error('[Supabase Error] transferConsultationMinute tx insert:', err.message);
       }
@@ -437,7 +474,7 @@ class DataStore {
     return {
       success: true,
       clientBalance: clientProfile.wallet_balance,
-      panditBalance: panditProfile.wallet_balance,
+      panditBalance: panditWalletBalance,
     };
   }
 

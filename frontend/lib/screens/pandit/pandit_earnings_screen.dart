@@ -53,7 +53,7 @@ class PanditEarningsScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    '₹${earnings["totalEarned"] ?? "350.00"}',
+                    '₹${(((earnings["totalEarned"] ?? earnings["walletBalance"] ?? appState.userProfile?.walletBalance ?? 0.0) as num).toDouble()).toStringAsFixed(2)}',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 34,

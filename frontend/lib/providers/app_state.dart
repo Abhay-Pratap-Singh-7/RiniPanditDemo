@@ -292,6 +292,18 @@ class AppState extends ChangeNotifier {
       if (data['earnedAmount'] != null) {
         _activeConsultationEarned = (data['earnedAmount'] as num).toDouble();
       }
+
+      if (isPandit) {
+        final currentTotal = (_panditEarnings['totalEarned'] as num?)?.toDouble() ?? 0.0;
+        final earned = (data['earnedAmount'] as num?)?.toDouble() ?? 0.0;
+        final newBal = (data['walletBalance'] as num?)?.toDouble();
+        _panditEarnings = {
+          ..._panditEarnings,
+          'totalEarned': newBal ?? (currentTotal + earned),
+          'walletBalance': newBal ?? (currentTotal + earned),
+        };
+      }
+
       notifyListeners();
     });
 
