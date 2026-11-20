@@ -1,19 +1,19 @@
 # Rini Pandit Demo - Implementation Progress
 
 ## 1. Supabase & Database Layer
-- [ ] **1.1 Database Schema Initialization**
-  - [ ] Execute UUID extension and custom enum types (`session_type`, `session_status`, `tx_type`)
-  - [ ] Create `profiles` table with birth detail fields (`dob`, `tob`, `pob_city`, `wallet_balance`)
-  - [ ] Create `astrologers` table with specialties, rate per minute, and rating
-  - [ ] Create `consultations` table for session tracking
-  - [ ] Create `chat_messages` table for consultation message logs
-  - [ ] Create `wallet_transactions` ledger table
-- [ ] **1.2 Supabase Storage & Security**
-  - [ ] Configure avatars and document storage bucket
-  - [ ] Apply Row-Level Security (RLS) policies for user data isolation
-- [ ] **1.3 Seed Data**
-  - [ ] Seed verified astrologers across categories (Vedic, Tarot, Numerology, Vastu)
-  - [ ] Seed test user accounts with pre-loaded mock wallet balance
+- [x] **1.1 Database Schema Initialization**
+  - [x] Execute UUID extension and custom enum types (`session_type`, `session_status`, `tx_type`)
+  - [x] Create `profiles` table with birth detail fields (`dob`, `tob`, `pob_city`, `wallet_balance`)
+  - [x] Create `astrologers` table with specialties, rate per minute, and rating
+  - [x] Create `consultations` table for session tracking
+  - [x] Create `chat_messages` table for consultation message logs
+  - [x] Create `wallet_transactions` ledger table
+- [x] **1.2 Supabase Storage & Security**
+  - [x] Configure avatars and document storage bucket
+  - [x] Apply Row-Level Security (RLS) policies for user data isolation
+- [x] **1.3 Seed Data**
+  - [x] Seed verified astrologers across categories (Vedic, Tarot, Numerology, Vastu)
+  - [x] Seed test user accounts with pre-loaded mock wallet balance
 
 ---
 
@@ -48,7 +48,7 @@
 
 ## 3. Flutter Client Architecture
 - [ ] **3.1 Project Scaffolding & Theme**
-  - [ ] Flutter app initialization and package dependencies (`dio`, `web_socket_channel`, `supabase_flutter`, `provider`/`flutter_bloc`)
+  - [ ] Flutter app initialization and package dependencies (`dio`, `web_socket_channel`, `supabase_flutter`, `provider`)
   - [ ] Unified Material 3 AppTheme implementation (Astro brand colors, typography, input & button styles)
   - [ ] Reusable core widgets (CustomButton, AstrologerCard, BalancePill, LoadingState, ErrorBanner)
 - [ ] **3.2 Data Models & Network Layer**
@@ -82,8 +82,8 @@
 | Phase | Description | Status |
 | :--- | :--- | :--- |
 | **Phase 1** | Requirements & System Architecture Specification | Completed |
-| **Phase 2** | Supabase Setup & Database Schema Initialization | Pending |
-| **Phase 3** | Express.js REST API & WebSocket Realtime Server | Pending |
+| **Phase 2** | Supabase Setup & Database Schema Initialization | Completed |
+| **Phase 3** | Express.js REST API & WebSocket Realtime Server | In Progress |
 | **Phase 4** | Flutter App Theme, Components & Screens | Pending |
 | **Phase 5** | End-to-End WebSocket Consultation & Billing Integration | Pending |
 | **Phase 6** | Demo Hardening & Final Walkthrough | Pending |
