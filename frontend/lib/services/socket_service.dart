@@ -14,6 +14,7 @@ class SocketService {
   final _incomingRequestController = StreamController<Map<String, dynamic>>.broadcast();
   final _messageController = StreamController<ChatMessage>.broadcast();
   final _tickController = StreamController<Map<String, dynamic>>.broadcast();
+  final _timerStartedController = StreamController<Map<String, dynamic>>.broadcast();
   final _endedController = StreamController<Map<String, dynamic>>.broadcast();
   final _errorController = StreamController<String>.broadcast();
 
@@ -21,6 +22,7 @@ class SocketService {
   Stream<Map<String, dynamic>> get onIncomingRequest => _incomingRequestController.stream;
   Stream<ChatMessage> get onChatMessage => _messageController.stream;
   Stream<Map<String, dynamic>> get onBillingTick => _tickController.stream;
+  Stream<Map<String, dynamic>> get onTimerStarted => _timerStartedController.stream;
   Stream<Map<String, dynamic>> get onConsultationEnded => _endedController.stream;
   Stream<String> get onError => _errorController.stream;
 
@@ -60,6 +62,9 @@ class SocketService {
                 break;
               case 'billing:tick':
                 _tickController.add(payload);
+                break;
+              case 'consultation:timer_started':
+                _timerStartedController.add(payload);
                 break;
               case 'consultation:ended':
                 _endedController.add(payload);

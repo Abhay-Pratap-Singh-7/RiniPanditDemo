@@ -165,14 +165,14 @@ class _KundliScreenState extends State<KundliScreen> {
                       ),
                       const SizedBox(width: 14),
                       SizedBox(
-                        width: 76,
-                        height: 76,
+                        width: 96,
+                        height: 96,
                         child: Image.asset(
                           'assets/cards/card_kundli_art.png',
                           fit: BoxFit.contain,
                           errorBuilder: (context, error, stackTrace) => const Icon(
                             Icons.auto_stories_rounded,
-                            size: 54,
+                            size: 60,
                             color: AppTheme.cardCoral,
                           ),
                         ),

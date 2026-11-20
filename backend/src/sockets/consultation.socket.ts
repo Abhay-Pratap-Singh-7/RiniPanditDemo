@@ -14,24 +14,32 @@ export function setupConsultationSockets(wss: WebSocketServer) {
 
   // Setup callbacks for real-time per-minute billing
   billingEngine.setCallbacks(
-    (session: ActiveBillingSession, walletBalance: number) => {
+    (session: ActiveBillingSession, clientBalance: number, panditBalance?: number) => {
       broadcastToUser(session.userId, {
         event: 'billing:tick',
         data: {
           sessionId: session.sessionId,
           elapsedMinutes: Math.floor(session.elapsedSeconds / 60),
           totalDeducted: session.totalDeducted,
-          walletBalance,
+          walletBalance: clientBalance,
         },
       });
 
-      broadcastToUser(session.astrologerId, {
+      const panditPayload = {
         event: 'billing:tick',
         data: {
           sessionId: session.sessionId,
           elapsedMinutes: Math.floor(session.elapsedSeconds / 60),
           earnedAmount: session.totalDeducted,
+          walletBalance: panditBalance,
         },
+      };
+
+      broadcastToUser(session.astrologerId, panditPayload);
+      store.getAstrologer(session.astrologerId).then((astro) => {
+        if (astro && (astro as any).profile_id) {
+          broadcastToUser((astro as any).profile_id, panditPayload);
+        }
       });
     },
     async (session: ActiveBillingSession, reason: string) => {
@@ -172,22 +180,14 @@ export function setupConsultationSockets(wss: WebSocketServer) {
 
             await store.setAstrologerBusy(astro.id, true);
 
-            // Start per-minute billing
-            await billingEngine.startBillingSession(
-              consultation.id,
-              userId,
-              astro.id,
-              astro.rate_per_minute
-            );
-
-            // Send confirmation to client
+            // Send confirmation to client that connection is established
             const startedPayload = {
               event: 'consultation:started',
               data: {
                 session: consultation,
                 astrologer: astro,
                 user: user,
-                message: `Consultation started with ${astro.display_name}`,
+                message: `Connection established with ${astro.display_name}`,
               },
             };
             ws.send(JSON.stringify(startedPayload));
@@ -280,6 +280,32 @@ export function setupConsultationSockets(wss: WebSocketServer) {
 
             if (delivered) {
               console.log(`[WebSocket] Chat message forwarded successfully from ${userId} to ${targetRecipientId}`);
+            }
+
+            // Start timer and billing on first message from user
+            if (isClient && !billingEngine.isSessionActive(sessionId)) {
+              console.log(`[Billing] First message from client ${userId}. Transferring first minute payment to pandit...`);
+              await billingEngine.startBillingSession(
+                consultation.id,
+                consultation.user_id,
+                consultation.astrologer_id,
+                consultation.rate_per_minute
+              );
+
+              const timerStartedPayload = {
+                event: 'consultation:timer_started',
+                data: {
+                  sessionId: consultation.id,
+                  startedAt: new Date().toISOString(),
+                  ratePerMinute: consultation.rate_per_minute,
+                },
+              };
+              ws.send(JSON.stringify(timerStartedPayload));
+              broadcastToUser(consultation.astrologer_id, timerStartedPayload);
+              const astro = await store.getAstrologer(consultation.astrologer_id);
+              if (astro && (astro as any).profile_id) {
+                broadcastToUser((astro as any).profile_id, timerStartedPayload);
+              }
             }
             break;
           }

@@ -60,6 +60,7 @@ class AppState extends ChangeNotifier {
   double _activeConsultationEarned = 0.0;
   List<ChatMessage> _messages = [];
   int _activeSessionElapsedSeconds = 0;
+  bool _isTimerRunning = false;
   Timer? _localSecondsTimer;
 
   // Getters
@@ -86,6 +87,7 @@ class AppState extends ChangeNotifier {
   double get activeConsultationEarned => _activeConsultationEarned;
   List<ChatMessage> get messages => _messages;
   int get activeSessionElapsedSeconds => _activeSessionElapsedSeconds;
+  bool get isTimerRunning => _isTimerRunning;
 
   AppState() {
     _initApp();
@@ -219,16 +221,16 @@ class AppState extends ChangeNotifier {
       }
       _messages = [];
       _activeSessionElapsedSeconds = 0;
-      _activeConsultationEarned = _activeSession?.ratePerMinute ?? 0.0;
-
-      // Start local ticking timer
+      _activeConsultationEarned = 0.0;
+      _isTimerRunning = false;
       _localSecondsTimer?.cancel();
-      _localSecondsTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-        _activeSessionElapsedSeconds++;
-        notifyListeners();
-      });
+      _localSecondsTimer = null;
 
       notifyListeners();
+    });
+
+    _socket.onTimerStarted.listen((data) {
+      _startTimer();
     });
 
     _socket.onIncomingRequest.listen((data) {
@@ -238,6 +240,15 @@ class AppState extends ChangeNotifier {
 
     _socket.onChatMessage.listen((msg) {
       _messages.add(msg);
+      if (!_isTimerRunning && _activeSession != null) {
+        String? clientUserId = _activeConsultationUser?.id;
+        if (clientUserId == null && _currentRole != 'pandit') {
+          clientUserId = _currentUser?['id']?.toString();
+        }
+        if (clientUserId != null && msg.senderId == clientUserId) {
+          _startTimer();
+        }
+      }
       notifyListeners();
     });
 
@@ -266,6 +277,10 @@ class AppState extends ChangeNotifier {
 
     _socket.onConsultationEnded.listen((data) {
       _localSecondsTimer?.cancel();
+      _localSecondsTimer = null;
+      _isTimerRunning = false;
+      _activeSessionElapsedSeconds = 0;
+      _activeConsultationEarned = 0.0;
       _activeSession = null;
       _activeAstrologer = null;
       _activeConsultationUser = null;
@@ -692,11 +707,27 @@ class AppState extends ChangeNotifier {
     if (_activeSession != null) {
       _socket.endConsultation(_activeSession!.id);
       _localSecondsTimer?.cancel();
+      _localSecondsTimer = null;
+      _isTimerRunning = false;
+      _activeSessionElapsedSeconds = 0;
+      _activeConsultationEarned = 0.0;
       _activeSession = null;
       _activeAstrologer = null;
       _activeConsultationUser = null;
       notifyListeners();
     }
+  }
+
+  void _startTimer() {
+    if (_isTimerRunning) return;
+    _isTimerRunning = true;
+    _activeSessionElapsedSeconds = 0;
+    _localSecondsTimer?.cancel();
+    _localSecondsTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      _activeSessionElapsedSeconds++;
+      notifyListeners();
+    });
+    notifyListeners();
   }
 
   void sendMessage(String content) {
@@ -706,6 +737,9 @@ class AppState extends ChangeNotifier {
   void sendChatMessage(String content) {
     if (_activeSession != null && content.trim().isNotEmpty) {
       _socket.sendMessage(_activeSession!.id, content.trim());
+      if (!_isTimerRunning && !isPandit) {
+        _startTimer();
+      }
     }
   }
 

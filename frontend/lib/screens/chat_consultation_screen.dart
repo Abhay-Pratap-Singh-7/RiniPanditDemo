@@ -86,15 +86,17 @@ class _ChatConsultationScreenState extends State<ChatConsultationScreen> {
                       Container(
                         width: 7,
                         height: 7,
-                        decoration: const BoxDecoration(
-                          color: AppTheme.accentCyan,
+                        decoration: BoxDecoration(
+                          color: appState.activeSession != null ? AppTheme.accentCyan : Colors.orangeAccent,
                           shape: BoxShape.circle,
                         ),
                       ),
                       const SizedBox(width: 5),
                       Expanded(
                         child: Text(
-                          'Live Consultation • ₹${widget.astrologer.ratePerMinute.toStringAsFixed(0)}/min',
+                          appState.activeSession != null
+                              ? 'Connection Established • ₹${widget.astrologer.ratePerMinute.toStringAsFixed(0)}/min'
+                              : 'Connecting with ${widget.astrologer.displayName}...',
                           style: const TextStyle(fontSize: 11, color: AppTheme.cardLilac),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -114,15 +116,25 @@ class _ChatConsultationScreenState extends State<ChatConsultationScreen> {
             decoration: BoxDecoration(
               color: AppTheme.surfaceTile,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppTheme.borderSubtle),
+              border: Border.all(
+                color: appState.isTimerRunning ? AppTheme.accentCyan.withAlpha(120) : AppTheme.borderSubtle,
+              ),
             ),
             child: Row(
               children: [
-                const Icon(Icons.timer_outlined, color: AppTheme.cardLilac, size: 15),
+                Icon(
+                  Icons.timer_outlined,
+                  color: appState.isTimerRunning ? AppTheme.accentCyan : AppTheme.cardLilac,
+                  size: 15,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   _formatTimer(appState.activeSessionElapsedSeconds),
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    color: appState.isTimerRunning ? AppTheme.accentCyan : Colors.white,
+                  ),
                 ),
               ],
             ),
@@ -195,9 +207,9 @@ class _ChatConsultationScreenState extends State<ChatConsultationScreen> {
                     color: AppTheme.cardPurple.withAlpha(50),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Text(
-                    'Billed Every 60s',
-                    style: TextStyle(fontSize: 11, color: AppTheme.cardLilac, fontWeight: FontWeight.w500),
+                  child: Text(
+                    appState.isTimerRunning ? 'Billed Every 60s' : 'Billed on First Message',
+                    style: const TextStyle(fontSize: 11, color: AppTheme.cardLilac, fontWeight: FontWeight.w500),
                   ),
                 ),
               ],
@@ -207,24 +219,88 @@ class _ChatConsultationScreenState extends State<ChatConsultationScreen> {
           // Chat Messages View
           Expanded(
             child: messages.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const CircularProgressIndicator(color: AppTheme.cardPurple),
-                        const SizedBox(height: 16),
-                        Wrap(
+                ? (appState.activeSession == null
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
+                            const CircularProgressIndicator(color: AppTheme.cardPurple),
+                            const SizedBox(height: 16),
                             Text(
                               'Connecting with ${widget.astrologer.displayName}...',
                               style: const TextStyle(color: AppTheme.textMuted),
-                              softWrap: true,
                             ),
                           ],
                         ),
-                      ],
-                    ),
-                  )
+                      )
+                    : Center(
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                width: 68,
+                                height: 68,
+                                decoration: BoxDecoration(
+                                  color: AppTheme.accentCyan.withAlpha(25),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: AppTheme.accentCyan, width: 2),
+                                ),
+                                child: const Icon(
+                                  Icons.check_circle_rounded,
+                                  color: AppTheme.accentCyan,
+                                  size: 38,
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+                              const Text(
+                                'Connection Established',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                'Live session ready with ${widget.astrologer.displayName}',
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  color: AppTheme.cardLilac,
+                                  fontSize: 13,
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.surfaceDark,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: AppTheme.borderSubtle),
+                                ),
+                                child: Text(
+                                  'Rate: ₹${widget.astrologer.ratePerMinute.toStringAsFixed(0)}/min • Timer and billing start on first message',
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    color: AppTheme.textMuted,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              const Text(
+                                'Send a message below to begin consultation.',
+                                style: TextStyle(
+                                  color: AppTheme.textMuted,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ))
                 : ListView.builder(
                     controller: _scrollController,
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),

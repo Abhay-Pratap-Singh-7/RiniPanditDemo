@@ -12,15 +12,19 @@ export interface ActiveBillingSession {
 
 export class BillingEngine {
   private activeSessions: Map<string, ActiveBillingSession> = new Map();
-  private onTickCallback?: (session: ActiveBillingSession, walletBalance: number) => void;
+  private onTickCallback?: (session: ActiveBillingSession, clientBalance: number, panditBalance?: number) => void;
   private onLowBalanceCallback?: (session: ActiveBillingSession, reason: string) => void;
 
   setCallbacks(
-    onTick: (session: ActiveBillingSession, walletBalance: number) => void,
+    onTick: (session: ActiveBillingSession, clientBalance: number, panditBalance?: number) => void,
     onLowBalance: (session: ActiveBillingSession, reason: string) => void
   ) {
     this.onTickCallback = onTick;
     this.onLowBalanceCallback = onLowBalance;
+  }
+
+  isSessionActive(sessionId: string): boolean {
+    return this.activeSessions.has(sessionId);
   }
 
   async startBillingSession(sessionId: string, userId: string, astrologerId: string, ratePerMinute: number) {
@@ -36,8 +40,8 @@ export class BillingEngine {
       totalDeducted: 0,
     };
 
-    // First minute debit check
-    const deductRes = await store.deductConsultationMinute(userId, sessionId, ratePerMinute);
+    // First minute payment transfer from client to pandit
+    const deductRes = await store.transferConsultationMinute(userId, astrologerId, sessionId, ratePerMinute);
     if (!deductRes.success) {
       if (this.onLowBalanceCallback) {
         this.onLowBalanceCallback(active, 'insufficient_balance');
@@ -48,10 +52,19 @@ export class BillingEngine {
     active.totalDeducted += ratePerMinute;
     active.elapsedSeconds += 60;
 
+    await store.updateConsultation(sessionId, {
+      duration_seconds: active.elapsedSeconds,
+      total_deducted: active.totalDeducted,
+    });
+
+    if (this.onTickCallback) {
+      this.onTickCallback(active, deductRes.clientBalance, deductRes.panditBalance);
+    }
+
     // Heartbeat every 60 seconds
     active.timer = setInterval(async () => {
       active.elapsedSeconds += 60;
-      const res = await store.deductConsultationMinute(userId, sessionId, ratePerMinute);
+      const res = await store.transferConsultationMinute(userId, astrologerId, sessionId, ratePerMinute);
 
       if (!res.success) {
         this.stopBillingSession(sessionId);
@@ -66,7 +79,7 @@ export class BillingEngine {
         });
 
         if (this.onTickCallback) {
-          this.onTickCallback(active, res.newBalance);
+          this.onTickCallback(active, res.clientBalance, res.panditBalance);
         }
       }
     }, 60000);

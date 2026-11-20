@@ -55,7 +55,7 @@ export interface WalletTransaction {
   id: string;
   user_id: string;
   amount: number;
-  type: 'recharge' | 'consultation_debit' | 'refund' | 'promo_credit';
+  type: 'recharge' | 'consultation_debit' | 'consultation_credit' | 'refund' | 'promo_credit';
   reference_id?: string;
   description: string;
   balance_after: number;
@@ -356,39 +356,100 @@ class DataStore {
     return { profile, tx };
   }
 
+  async transferConsultationMinute(
+    clientId: string,
+    astrologerId: string,
+    sessionId: string,
+    amount: number
+  ): Promise<{ success: boolean; clientBalance: number; panditBalance: number }> {
+    const clientProfile = await this.getProfile(clientId);
+    if (!clientProfile || clientProfile.wallet_balance < amount) {
+      return {
+        success: false,
+        clientBalance: clientProfile?.wallet_balance || 0,
+        panditBalance: 0,
+      };
+    }
+
+    // 1. Debit client account
+    clientProfile.wallet_balance = Math.max(0, Number((clientProfile.wallet_balance - amount).toFixed(2)));
+    await this.updateProfile(clientId, { wallet_balance: clientProfile.wallet_balance });
+
+    const debitTx: WalletTransaction = {
+      id: `tx_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      user_id: clientId,
+      amount: -amount,
+      type: 'consultation_debit',
+      reference_id: sessionId,
+      description: 'Consultation minute debit',
+      balance_after: clientProfile.wallet_balance,
+      created_at: new Date().toISOString(),
+    };
+    this.transactions.unshift(debitTx);
+
+    // 2. Credit pandit account
+    const astro = await this.getAstrologer(astrologerId);
+    const panditProfileId = (astro as any)?.profile_id || astrologerId;
+    let panditProfile = await this.getProfile(panditProfileId);
+    if (!panditProfile && astrologerId !== panditProfileId) {
+      panditProfile = await this.getProfile(astrologerId);
+    }
+
+    if (!panditProfile) {
+      panditProfile = {
+        id: panditProfileId,
+        phone: '',
+        full_name: astro?.display_name || 'Acharya',
+        gender: 'male',
+        dob: '',
+        tob: '',
+        pob_city: '',
+        pob_country: 'India',
+        wallet_balance: 0,
+        avatar_url: astro?.avatar_url || '',
+      };
+    }
+
+    panditProfile.wallet_balance = Number((Number(panditProfile.wallet_balance || 0) + amount).toFixed(2));
+    await this.updateProfile(panditProfile.id, { wallet_balance: panditProfile.wallet_balance });
+
+    const creditTx: WalletTransaction = {
+      id: `tx_${Date.now() + 1}_${Math.random().toString(36).substring(2, 7)}`,
+      user_id: panditProfile.id,
+      amount: amount,
+      type: 'consultation_credit',
+      reference_id: sessionId,
+      description: `Consultation Earning from ${clientProfile.full_name || 'Client'}`,
+      balance_after: panditProfile.wallet_balance,
+      created_at: new Date().toISOString(),
+    };
+    this.transactions.unshift(creditTx);
+
+    const db = getDbClient();
+    if (db) {
+      try {
+        await db.from('wallet_transactions').insert([debitTx, creditTx]);
+      } catch (err: any) {
+        console.error('[Supabase Error] transferConsultationMinute tx insert:', err.message);
+      }
+    }
+
+    return {
+      success: true,
+      clientBalance: clientProfile.wallet_balance,
+      panditBalance: panditProfile.wallet_balance,
+    };
+  }
+
   async deductConsultationMinute(
     userId: string,
     sessionId: string,
     amount: number
   ): Promise<{ success: boolean; newBalance: number }> {
-    const profile = await this.getProfile(userId);
-    if (!profile || profile.wallet_balance < amount) {
-      return { success: false, newBalance: profile?.wallet_balance || 0 };
-    }
-
-    profile.wallet_balance = Math.max(0, Number((profile.wallet_balance - amount).toFixed(2)));
-    await this.updateProfile(userId, { wallet_balance: profile.wallet_balance });
-
-    const tx: WalletTransaction = {
-      id: `tx_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-      user_id: userId,
-      amount: -amount,
-      type: 'consultation_debit',
-      reference_id: sessionId,
-      description: `Per-minute Consultation Debit`,
-      balance_after: profile.wallet_balance,
-      created_at: new Date().toISOString(),
-    };
-    this.transactions.unshift(tx);
-    const db = getDbClient();
-    if (db) {
-      try {
-        const { error } = await db.from('wallet_transactions').insert(tx);
-        if (error) console.error('[Supabase Error] deductConsultationMinute tx insert:', error.message);
-      } catch (_) {}
-    }
-
-    return { success: true, newBalance: profile.wallet_balance };
+    const consultation = await this.getConsultation(sessionId);
+    const astrologerId = consultation?.astrologer_id || '';
+    const res = await this.transferConsultationMinute(userId, astrologerId, sessionId, amount);
+    return { success: res.success, newBalance: res.clientBalance };
   }
 
   async getTransactions(userId: string): Promise<WalletTransaction[]> {

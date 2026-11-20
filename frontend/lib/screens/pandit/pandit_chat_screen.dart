@@ -87,7 +87,7 @@ class _PanditChatScreenState extends State<PanditChatScreen> {
                       const SizedBox(width: 5),
                       Expanded(
                         child: Text(
-                          'Live Client Session • ₹${session?.ratePerMinute.toStringAsFixed(0) ?? "25"}/min',
+                          'Connection Established • ₹${session?.ratePerMinute.toStringAsFixed(0) ?? "25"}/min',
                           style: const TextStyle(fontSize: 11, color: AppTheme.cardLilac),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -107,15 +107,25 @@ class _PanditChatScreenState extends State<PanditChatScreen> {
             decoration: BoxDecoration(
               color: AppTheme.surfaceTile,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppTheme.borderSubtle),
+              border: Border.all(
+                color: appState.isTimerRunning ? AppTheme.accentCyan.withAlpha(120) : AppTheme.borderSubtle,
+              ),
             ),
             child: Row(
               children: [
-                const Icon(Icons.timer_outlined, color: AppTheme.cardLilac, size: 15),
+                Icon(
+                  Icons.timer_outlined,
+                  color: appState.isTimerRunning ? AppTheme.accentCyan : AppTheme.cardLilac,
+                  size: 15,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   _formatTimer(appState.activeSessionElapsedSeconds),
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    color: appState.isTimerRunning ? AppTheme.accentCyan : Colors.white,
+                  ),
                 ),
               ],
             ),
@@ -208,16 +218,71 @@ class _PanditChatScreenState extends State<PanditChatScreen> {
           Expanded(
             child: messages.isEmpty
                 ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
-                        CircularProgressIndicator(color: AppTheme.cardPurple),
-                        SizedBox(height: 16),
-                        Text(
-                          'Client session active. Type your guidance below.',
-                          style: TextStyle(color: AppTheme.textMuted),
-                        ),
-                      ],
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 68,
+                            height: 68,
+                            decoration: BoxDecoration(
+                              color: AppTheme.accentCyan.withAlpha(25),
+                              shape: BoxShape.circle,
+                              border: Border.all(color: AppTheme.accentCyan, width: 2),
+                            ),
+                            child: const Icon(
+                              Icons.check_circle_rounded,
+                              color: AppTheme.accentCyan,
+                              size: 38,
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          const Text(
+                            'Connection Established',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Connected with ${client?.fullName ?? "Devotee / Client"}',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: AppTheme.cardLilac,
+                              fontSize: 13,
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: AppTheme.surfaceDark,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: AppTheme.borderSubtle),
+                            ),
+                            child: Text(
+                              'Rate: ₹${session?.ratePerMinute.toStringAsFixed(0) ?? "25"}/min • Timer starts when client sends first message',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: AppTheme.textMuted,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Client session active. Type your guidance below.',
+                            style: TextStyle(
+                              color: AppTheme.textMuted,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   )
                 : ListView.builder(
