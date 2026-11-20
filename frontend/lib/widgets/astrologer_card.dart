@@ -45,7 +45,7 @@ class _AstrologerCardState extends State<AstrologerCard> {
     final astro = widget.astrologer;
     final bioText = astro.bio.isNotEmpty
         ? astro.bio
-        : '${astro.specialties.join(", ")} expert with ${astro.experienceYears}+ years experience in Vedic consultations, kundli matching, and remedies.';
+        : '${astro.specialties.join(", ")} expert with ${astro.experienceYears}+ years experience in Vedic consultations, kundli chart analysis, and life guidance.';
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -57,7 +57,7 @@ class _AstrologerCardState extends State<AstrologerCard> {
         boxShadow: [
           BoxShadow(
             color: Colors.black.withAlpha(60),
-            blurRadius: 12,
+            blurRadius: 14,
             offset: const Offset(0, 4),
           ),
         ],
@@ -65,33 +65,33 @@ class _AstrologerCardState extends State<AstrologerCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Top Row: Big Avatar + Info
+          // Top Row: Bigger Avatar on Left + Name & Smaller Tags on Right
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Bigger Image Avatar (diameter 84) with Online Status
+              // Bigger Image Avatar (Radius 44, Diameter 88)
               Stack(
                 children: [
                   CircleAvatar(
-                    radius: 42,
+                    radius: 44,
                     backgroundColor: AppTheme.cardPurple.withAlpha(35),
                     backgroundImage: astro.avatarUrl.isNotEmpty
                         ? NetworkImage(astro.avatarUrl)
                         : null,
                     child: astro.avatarUrl.isEmpty
-                        ? const Icon(Icons.person, size: 40, color: AppTheme.cardLilac)
+                        ? const Icon(Icons.person, size: 44, color: AppTheme.cardLilac)
                         : null,
                   ),
                   Positioned(
                     bottom: 2,
                     right: 2,
                     child: Container(
-                      width: 15,
-                      height: 15,
+                      width: 16,
+                      height: 16,
                       decoration: BoxDecoration(
                         color: astro.isOnline ? AppTheme.accentCyan : Colors.grey,
                         shape: BoxShape.circle,
-                        border: Border.all(color: AppTheme.surfaceDark, width: 2.2),
+                        border: Border.all(color: AppTheme.surfaceDark, width: 2.5),
                       ),
                     ),
                   ),
@@ -99,7 +99,7 @@ class _AstrologerCardState extends State<AstrologerCard> {
               ),
               const SizedBox(width: 14),
 
-              // Name, Smaller Tags, Experience
+              // Name & Smaller Tags
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -127,9 +127,12 @@ class _AstrologerCardState extends State<AstrologerCard> {
                       children: [
                         if (astro.specialties.isNotEmpty)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 2.5,
+                            ),
                             decoration: BoxDecoration(
-                              color: AppTheme.cardPurple.withAlpha(35),
+                              color: AppTheme.cardPurple.withAlpha(40),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
@@ -142,7 +145,31 @@ class _AstrologerCardState extends State<AstrologerCard> {
                             ),
                           ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 2.5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppTheme.surfaceTile,
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: AppTheme.borderSubtle, width: 0.8),
+                          ),
+                          child: Text(
+                            astro.isOnline
+                                ? 'Gold Verified'
+                                : '${astro.experienceYears}+ Yrs',
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.cardCoral,
+                            ),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 2.5,
+                          ),
                           decoration: BoxDecoration(
                             color: AppTheme.surfaceTile,
                             borderRadius: BorderRadius.circular(6),
@@ -162,22 +189,6 @@ class _AstrologerCardState extends State<AstrologerCard> {
                                 ),
                               ),
                             ],
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
-                          decoration: BoxDecoration(
-                            color: AppTheme.surfaceTile,
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: AppTheme.borderSubtle, width: 0.8),
-                          ),
-                          child: Text(
-                            '${astro.experienceYears}+ Yrs',
-                            style: const TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: AppTheme.textMuted,
-                            ),
                           ),
                         ),
                       ],
@@ -239,43 +250,97 @@ class _AstrologerCardState extends State<AstrologerCard> {
           ),
           const SizedBox(height: 14),
 
-          // Bottom Action Row: Rate + Consult Pill Button
+          // Bottom Action Row: Black Pill Button + 2 Circular Outline Buttons
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                '₹${astro.ratePerMinute.toStringAsFixed(0)} / min',
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                  color: AppTheme.textWhite,
+              // + Consult Pill Button
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => _handleConsult(context, appState),
+                  child: Container(
+                    height: 46,
+                    decoration: BoxDecoration(
+                      color: AppTheme.cardPurple,
+                      borderRadius: BorderRadius.circular(23),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.cardPurple.withAlpha(50),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.add, color: Colors.white, size: 17),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            'Consult (₹${astro.ratePerMinute.toStringAsFixed(0)}/min)',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13,
+                              letterSpacing: -0.2,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.cardPurple,
-                  foregroundColor: AppTheme.textWhite,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 9),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18),
+              const SizedBox(width: 10),
+
+              // Circular Outline Button 1: Chat
+              GestureDetector(
+                onTap: () => _handleConsult(context, appState),
+                child: Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppTheme.surfaceTile,
+                    border: Border.all(color: AppTheme.borderSubtle, width: 1.2),
                   ),
-                  elevation: 0,
-                ),
-                onPressed: () => _handleConsult(context, appState),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: const [
-                    Icon(Icons.chat_bubble_outline, size: 15, color: Colors.white),
-                    SizedBox(width: 6),
-                    Text(
-                      'Consult',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.chat_bubble_outline_rounded,
+                      size: 18,
+                      color: AppTheme.textWhite,
                     ),
-                  ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+
+              // Circular Outline Button 2: Notification / Alerts
+              GestureDetector(
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Subscribed to ${astro.displayName}\'s schedule.'),
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                },
+                child: Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppTheme.surfaceTile,
+                    border: Border.all(color: AppTheme.borderSubtle, width: 1.2),
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.notifications_none_rounded,
+                      size: 20,
+                      color: AppTheme.textWhite,
+                    ),
+                  ),
                 ),
               ),
             ],
