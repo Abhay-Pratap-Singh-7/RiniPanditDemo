@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../core/constants/api_constants.dart';
 import '../models/user_profile.dart';
 import '../models/astrologer.dart';
@@ -21,9 +22,11 @@ class AppState extends ChangeNotifier {
   // Supabase Auth State
   String? _authToken;
   bool _isAuthenticated = false;
+  bool _isRestoringSession = true;
   Map<String, dynamic>? _currentUser;
 
   bool get isAuthenticated => _isAuthenticated;
+  bool get isRestoringSession => _isRestoringSession;
   String? get authToken => _authToken;
   Map<String, dynamic>? get currentUser => _currentUser;
 
@@ -90,10 +93,13 @@ class AppState extends ChangeNotifier {
 
   Future<void> _initApp() async {
     _isLoading = true;
+    _isRestoringSession = true;
     notifyListeners();
 
     try {
       _listenToSocketEvents();
+
+      await _restoreSession();
 
       // Load public marketplace and horoscope catalog
       await Future.wait([
@@ -104,7 +110,100 @@ class AppState extends ChangeNotifier {
       _errorMessage = ApiService.extractErrorMessage(e);
     } finally {
       _isLoading = false;
+      _isRestoringSession = false;
       notifyListeners();
+    }
+  }
+
+  Future<void> _restoreSession() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      final role = prefs.getString('user_role') ?? 'user';
+      final userId = prefs.getString('user_id');
+      final email = prefs.getString('user_email');
+
+      if (token != null && token.isNotEmpty) {
+        _authToken = token;
+        _api.setAuthToken(token);
+        _isAuthenticated = true;
+        _currentRole = role;
+
+        if (userId != null) {
+          _currentUser = {
+            'id': userId,
+            'email': email ?? '',
+            'role': role,
+          };
+        }
+
+        final uid = userId ?? ApiConstants.defaultUserId;
+        _socket.connect(uid);
+
+        try {
+          final meRes = await _api.getMe();
+          if (meRes['success'] == true) {
+            if (meRes['user'] != null) {
+              _currentUser = meRes['user'] as Map<String, dynamic>?;
+            }
+            if (meRes['role'] != null) {
+              _currentRole = meRes['role'] as String;
+              await prefs.setString('user_role', _currentRole);
+            }
+            if (meRes['profile'] != null) {
+              _userProfile = UserProfile.fromJson(meRes['profile']);
+            }
+            if (meRes['astrologer'] != null) {
+              _currentPandit = Astrologer.fromJson(meRes['astrologer']);
+            }
+          }
+        } catch (e) {
+          final errStr = e.toString().toLowerCase();
+          if (errStr.contains('401') || errStr.contains('unauthorized')) {
+            await logout();
+            return;
+          }
+        }
+
+        if (isPandit) {
+          await loadPanditData(_currentPandit?.id ?? _userProfile?.id ?? userId);
+        } else {
+          await loadProfile();
+        }
+      }
+    } catch (e) {
+      debugPrint('[AppState] Failed to restore session: $e');
+    }
+  }
+
+  Future<void> _saveSession({
+    required String token,
+    required String role,
+    required String userId,
+    String? email,
+  }) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('auth_token', token);
+      await prefs.setString('user_role', role);
+      await prefs.setString('user_id', userId);
+      if (email != null && email.isNotEmpty) {
+        await prefs.setString('user_email', email);
+      }
+    } catch (e) {
+      debugPrint('[AppState] Failed to save session: $e');
+    }
+  }
+
+  Future<void> _clearSession() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('auth_token');
+      await prefs.remove('user_role');
+      await prefs.remove('user_id');
+      await prefs.remove('user_email');
+    } catch (e) {
+      debugPrint('[AppState] Failed to clear session: $e');
     }
   }
 
@@ -231,6 +330,16 @@ class AppState extends ChangeNotifier {
 
         // Reconnect socket with authenticated user ID
         final uid = _userProfile?.id ?? _currentUser?['id'] ?? ApiConstants.defaultUserId;
+
+        if (_authToken != null && _authToken!.isNotEmpty) {
+          await _saveSession(
+            token: _authToken!,
+            role: _currentRole,
+            userId: uid.toString(),
+            email: email,
+          );
+        }
+
         _socket.connect(uid.toString());
 
         await loadProfile();
@@ -286,6 +395,16 @@ class AppState extends ChangeNotifier {
 
         // Reconnect socket with authenticated user ID
         final uid = _userProfile?.id ?? _currentUser?['id'] ?? ApiConstants.defaultUserId;
+
+        if (_authToken != null && _authToken!.isNotEmpty) {
+          await _saveSession(
+            token: _authToken!,
+            role: _currentRole,
+            userId: uid.toString(),
+            email: email,
+          );
+        }
+
         _socket.connect(uid.toString());
 
         await loadProfile();
@@ -313,6 +432,10 @@ class AppState extends ChangeNotifier {
 
     try {
       await _api.signOut();
+    } catch (e) {
+      _errorMessage = ApiService.extractErrorMessage(e);
+    } finally {
+      await _clearSession();
       _authToken = null;
       _isAuthenticated = false;
       _currentUser = null;
@@ -320,9 +443,6 @@ class AppState extends ChangeNotifier {
       _userProfile = null;
       _currentPandit = null;
       _socket.connect(ApiConstants.defaultUserId);
-    } catch (e) {
-      _errorMessage = ApiService.extractErrorMessage(e);
-    } finally {
       _isLoading = false;
       notifyListeners();
     }
@@ -335,6 +455,8 @@ class AppState extends ChangeNotifier {
     notifyListeners();
 
     try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('user_role', role);
       if (role == 'pandit') {
         final pid = panditId ?? _currentPandit?.id ?? _currentUser?['id'] ?? _userProfile?.id;
         if (pid != null) {
