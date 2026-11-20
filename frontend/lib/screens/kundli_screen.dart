@@ -394,7 +394,7 @@ class _KundliScreenState extends State<KundliScreen> {
                     physics: const NeverScrollableScrollPhysics(),
                     mainAxisSpacing: 10,
                     crossAxisSpacing: 10,
-                    childAspectRatio: 2.2,
+                    childAspectRatio: 1.95,
                     children: [
                       _buildSignBadge('Ascendant (Lagna)', kundli.ascendant, Icons.north_east_rounded),
                       _buildSignBadge('Moon Sign (Rashi)', kundli.moonSign, Icons.nightlight_round),
@@ -569,16 +569,28 @@ class _KundliScreenState extends State<KundliScreen> {
                               border: Border.all(color: AppTheme.borderSubtle, width: 0.8),
                             ),
                             child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(
-                                  p.planet,
-                                  style: const TextStyle(fontWeight: FontWeight.w700, color: Colors.white, fontSize: 13),
+                                Expanded(
+                                  flex: 3,
+                                  child: Text(
+                                    p.planet,
+                                    style: const TextStyle(fontWeight: FontWeight.w700, color: Colors.white, fontSize: 13),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
-                                Text(
-                                  '${p.sign} (${p.degree})',
-                                  style: const TextStyle(color: AppTheme.cardLilac, fontSize: 12.5),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  flex: 4,
+                                  child: Text(
+                                    '${p.sign} (${p.degree})',
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(color: AppTheme.cardLilac, fontSize: 12),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
+                                const SizedBox(width: 8),
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                   decoration: BoxDecoration(
@@ -666,7 +678,7 @@ class _KundliScreenState extends State<KundliScreen> {
 
   Widget _buildSignBadge(String label, String value, IconData icon) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: AppTheme.surfaceDark,
         borderRadius: BorderRadius.circular(16),
@@ -688,12 +700,17 @@ class _KundliScreenState extends State<KundliScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(label, style: const TextStyle(fontSize: 10.5, color: AppTheme.textMuted)),
+                Text(
+                  label,
+                  style: const TextStyle(fontSize: 10.5, color: AppTheme.textMuted),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
                 const SizedBox(height: 2),
                 Text(
                   value,
                   style: const TextStyle(
-                    fontSize: 13.5,
+                    fontSize: 13,
                     fontWeight: FontWeight.bold,
                     color: AppTheme.textWhite,
                   ),
