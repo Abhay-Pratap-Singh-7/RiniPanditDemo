@@ -192,12 +192,12 @@ export function setupConsultationSockets(wss: WebSocketServer) {
               await store.updateProfile(userId, { wallet_balance: user.wallet_balance });
             }
 
-            // Create consultation session record with pending status
+            // Create consultation session record with requested status
             const consultation = await store.createConsultation({
               user_id: userId,
               astrologer_id: astro.id,
               type: 'chat',
-              status: 'pending',
+              status: 'requested',
               rate_per_minute: astro.rate_per_minute,
               duration_seconds: 0,
               total_deducted: 0,
@@ -245,13 +245,13 @@ export function setupConsultationSockets(wss: WebSocketServer) {
             const { sessionId } = data;
             const consultation = await store.getConsultation(sessionId);
             if (consultation) {
-              await store.updateConsultation(sessionId, { status: 'active' });
+              await store.updateConsultation(sessionId, { status: 'accepted', started_at: new Date().toISOString() });
               const astro = await store.getAstrologer(consultation.astrologer_id);
               const user = await store.getProfile(consultation.user_id);
               const startedPayload = {
                 event: 'consultation:started',
                 data: {
-                  session: { ...consultation, status: 'active' },
+                  session: { ...consultation, status: 'accepted' },
                   astrologer: astro,
                   user: user,
                   message: `Connection established with ${astro?.display_name || 'Pandit'}`,

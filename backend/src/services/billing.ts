@@ -5,6 +5,7 @@ export interface ActiveBillingSession {
   userId: string;
   astrologerId: string;
   ratePerMinute: number;
+  liveStartedAt: number;
   elapsedSeconds: number;
   totalDeducted: number;
   timer?: NodeJS.Timeout;
@@ -36,6 +37,7 @@ export class BillingEngine {
       userId,
       astrologerId,
       ratePerMinute,
+      liveStartedAt: Date.now(),
       elapsedSeconds: 0,
       totalDeducted: 0,
     };
@@ -94,6 +96,7 @@ export class BillingEngine {
       if (session.timer) {
         clearInterval(session.timer);
       }
+      session.elapsedSeconds = Math.max(session.elapsedSeconds, Math.round((Date.now() - session.liveStartedAt) / 1000));
       this.activeSessions.delete(sessionId);
       return session;
     }

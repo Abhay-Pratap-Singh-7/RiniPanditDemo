@@ -415,7 +415,7 @@ class _WalletScreenState extends State<WalletScreen> {
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
                                 Text(
-                                  '${isCredit ? "+" : "-"}₹${tx.amount.toStringAsFixed(2)}',
+                                  '${isCredit ? "+" : "-"}₹${tx.amount.abs().toStringAsFixed(2)}',
                                   style: TextStyle(
                                     color: isCredit ? AppTheme.accentCyan : AppTheme.cardCoral,
                                     fontWeight: FontWeight.bold,

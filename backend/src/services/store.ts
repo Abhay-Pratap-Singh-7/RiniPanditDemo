@@ -1,4 +1,10 @@
+import crypto from 'crypto';
 import { supabase, supabaseAdmin, getDbClient } from '../config/supabase.js';
+
+function isValidUuid(id: string | null | undefined): boolean {
+  if (!id) return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+}
 
 export interface Profile {
   id: string;
@@ -366,7 +372,7 @@ class DataStore {
     await this.updateProfile(userId, { wallet_balance: profile.wallet_balance });
 
     const tx: WalletTransaction = {
-      id: `tx_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      id: crypto.randomUUID(),
       user_id: userId,
       amount,
       type: 'recharge',
@@ -378,9 +384,19 @@ class DataStore {
     const db = getDbClient();
     if (db) {
       try {
-        const { error } = await db.from('wallet_transactions').insert(tx);
+        const { error } = await db.from('wallet_transactions').insert({
+          id: tx.id,
+          user_id: tx.user_id,
+          amount: tx.amount,
+          type: tx.type,
+          description: tx.description,
+          balance_after: tx.balance_after,
+          created_at: tx.created_at,
+        });
         if (error) console.error('[Supabase Error] rechargeWallet tx insert:', error.message);
-      } catch (_) {}
+      } catch (ex: any) {
+        console.error('[Supabase Exception] rechargeWallet tx insert:', ex?.message || ex);
+      }
     }
     return { profile, tx };
   }
@@ -391,11 +407,27 @@ class DataStore {
     sessionId: string,
     amount: number
   ): Promise<{ success: boolean; clientBalance: number; panditBalance: number }> {
-    const clientProfile = await this.getProfile(clientId);
-    if (!clientProfile || clientProfile.wallet_balance < amount) {
+    let clientProfile = await this.getProfile(clientId);
+    if (!clientProfile) {
+      clientProfile = {
+        id: clientId,
+        phone: `+91${Date.now().toString().slice(-10)}`,
+        full_name: 'Devotee / Client',
+        gender: 'male',
+        dob: '',
+        tob: '',
+        pob_city: '',
+        pob_country: 'India',
+        wallet_balance: 500.0,
+        avatar_url: '',
+      };
+      await this.updateProfile(clientId, clientProfile);
+    }
+
+    if (clientProfile.wallet_balance < amount) {
       return {
         success: false,
-        clientBalance: clientProfile?.wallet_balance || 0,
+        clientBalance: clientProfile.wallet_balance,
         panditBalance: 0,
       };
     }
@@ -404,13 +436,15 @@ class DataStore {
     clientProfile.wallet_balance = Math.max(0, Number((clientProfile.wallet_balance - amount).toFixed(2)));
     await this.updateProfile(clientId, { wallet_balance: clientProfile.wallet_balance });
 
+    const validRefId = isValidUuid(sessionId) ? sessionId : undefined;
+
     const debitTx: WalletTransaction = {
-      id: `tx_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      id: crypto.randomUUID(),
       user_id: clientId,
       amount: -amount,
       type: 'consultation_debit',
-      reference_id: sessionId,
-      description: 'Consultation minute debit',
+      reference_id: validRefId,
+      description: 'Consultation minute fee',
       balance_after: clientProfile.wallet_balance,
       created_at: new Date().toISOString(),
     };
@@ -425,56 +459,93 @@ class DataStore {
       if ((astro as any).profile_id) candidateIds.add((astro as any).profile_id);
     }
 
-    let panditWalletBalance = 0;
-    const creditTxs: WalletTransaction[] = [];
-
-    for (const pid of candidateIds) {
-      let p = await this.getProfile(pid);
-      if (!p) {
-        p = {
-          id: pid,
-          phone: '',
-          full_name: astro?.display_name || 'Acharya',
-          gender: 'male',
-          dob: '',
-          tob: '',
-          pob_city: '',
-          pob_country: 'India',
-          wallet_balance: 0,
-          avatar_url: astro?.avatar_url || '',
-        };
-      }
-      p.wallet_balance = Number((Number(p.wallet_balance || 0) + amount).toFixed(2));
-      await this.updateProfile(pid, { wallet_balance: p.wallet_balance });
-      panditWalletBalance = p.wallet_balance;
-
-      const creditTx: WalletTransaction = {
-        id: `tx_${Date.now() + 1}_${Math.random().toString(36).substring(2, 7)}`,
-        user_id: pid,
-        amount: amount,
-        type: 'consultation_credit',
-        reference_id: sessionId,
-        description: `Consultation Earning from ${clientProfile.full_name || 'Client'}`,
-        balance_after: p.wallet_balance,
-        created_at: new Date().toISOString(),
-      };
-      this.transactions.unshift(creditTx);
-      creditTxs.push(creditTx);
+    const primaryPanditId = (astro as any)?.profile_id || astro?.id || astrologerId;
+    let panditProfile = await this.getProfile(primaryPanditId);
+    if (!panditProfile && primaryPanditId !== astrologerId) {
+      panditProfile = await this.getProfile(astrologerId);
     }
 
+    if (!panditProfile) {
+      panditProfile = {
+        id: isValidUuid(primaryPanditId) ? primaryPanditId : crypto.randomUUID(),
+        phone: `+91${Date.now().toString().slice(-10)}`,
+        full_name: astro?.display_name || 'Acharya',
+        gender: 'male',
+        dob: '',
+        tob: '',
+        pob_city: '',
+        pob_country: 'India',
+        wallet_balance: 0.0,
+        avatar_url: astro?.avatar_url || '',
+      };
+    }
+
+    panditProfile.wallet_balance = Number((Number(panditProfile.wallet_balance || 0) + amount).toFixed(2));
+    await this.updateProfile(panditProfile.id, { wallet_balance: panditProfile.wallet_balance });
+
+    // Sync all alias profile IDs for this pandit
+    for (const cid of candidateIds) {
+      if (cid !== panditProfile.id) {
+        const alt = await this.getProfile(cid);
+        if (alt) {
+          alt.wallet_balance = panditProfile.wallet_balance;
+          await this.updateProfile(cid, { wallet_balance: alt.wallet_balance });
+        }
+      }
+    }
+
+    const creditTx: WalletTransaction = {
+      id: crypto.randomUUID(),
+      user_id: panditProfile.id,
+      amount: amount,
+      type: 'promo_credit', // Valid tx_type enum in Supabase ledger
+      reference_id: validRefId,
+      description: `Consultation earning from ${clientProfile.full_name || 'Client'}`,
+      balance_after: panditProfile.wallet_balance,
+      created_at: new Date().toISOString(),
+    };
+    this.transactions.unshift(creditTx);
+
+    // 3. Persist transactions to Supabase wallet_transactions table
     const db = getDbClient();
     if (db) {
       try {
-        await db.from('wallet_transactions').insert([debitTx, ...creditTxs]);
+        const { error } = await db.from('wallet_transactions').insert([
+          {
+            id: debitTx.id,
+            user_id: debitTx.user_id,
+            amount: debitTx.amount,
+            type: debitTx.type,
+            reference_id: debitTx.reference_id,
+            description: debitTx.description,
+            balance_after: debitTx.balance_after,
+            created_at: debitTx.created_at,
+          },
+          {
+            id: creditTx.id,
+            user_id: creditTx.user_id,
+            amount: creditTx.amount,
+            type: creditTx.type,
+            reference_id: creditTx.reference_id,
+            description: creditTx.description,
+            balance_after: creditTx.balance_after,
+            created_at: creditTx.created_at,
+          },
+        ]);
+        if (error) {
+          console.error('[Supabase Error] wallet_transactions insert:', error.message);
+        } else {
+          console.log(`[Supabase Success] Inserted consultation debit for client ${clientId} and credit for pandit ${panditProfile.id}`);
+        }
       } catch (err: any) {
-        console.error('[Supabase Error] transferConsultationMinute tx insert:', err.message);
+        console.error('[Supabase Exception] transferConsultationMinute tx insert:', err.message);
       }
     }
 
     return {
       success: true,
       clientBalance: clientProfile.wallet_balance,
-      panditBalance: panditWalletBalance,
+      panditBalance: panditProfile.wallet_balance,
     };
   }
 
@@ -490,35 +561,64 @@ class DataStore {
   }
 
   async getTransactions(userId: string): Promise<WalletTransaction[]> {
+    const astro = await this.getAstrologer(userId);
+    const candidateIds = new Set<string>([userId]);
+    if (astro) {
+      if (astro.id) candidateIds.add(astro.id);
+      if ((astro as any).profile_id) candidateIds.add((astro as any).profile_id);
+    }
+    const ids = Array.from(candidateIds);
+
     const db = getDbClient();
     if (db) {
       try {
         const { data, error } = await db
           .from('wallet_transactions')
           .select('*')
-          .eq('user_id', userId)
+          .in('user_id', ids)
           .order('created_at', { ascending: false });
         if (error) console.error('[Supabase Error] getTransactions:', error.message);
-        if (data) return data as WalletTransaction[];
+        if (data && data.length > 0) return data as WalletTransaction[];
       } catch (_) {}
     }
-    return this.transactions.filter((t) => t.user_id === userId);
+    return this.transactions.filter((t) => candidateIds.has(t.user_id));
   }
 
   // Consultation Session operations
   async createConsultation(data: Omit<Consultation, 'id' | 'created_at'>): Promise<Consultation> {
+    const consultationId = isValidUuid((data as any).id) ? (data as any).id : crypto.randomUUID();
     const session: Consultation = {
       ...data,
-      id: `cs_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      id: consultationId,
       created_at: new Date().toISOString(),
     };
     this.consultations.set(session.id, session);
     const db = getDbClient();
     if (db) {
       try {
-        const { error } = await db.from('consultations').insert(session);
+        let dbStatus = 'requested';
+        if (session.status === 'active') dbStatus = 'active';
+        else if (session.status === 'completed') dbStatus = 'completed';
+        else if (session.status === 'declined' || session.status === 'cancelled') dbStatus = 'cancelled';
+        else if (session.status === 'insufficient_balance') dbStatus = 'insufficient_balance';
+        else if (session.status === 'accepted') dbStatus = 'accepted';
+
+        const { error } = await db.from('consultations').insert({
+          id: session.id,
+          user_id: session.user_id,
+          astrologer_id: session.astrologer_id,
+          type: session.type || 'chat',
+          status: dbStatus,
+          rate_per_minute: session.rate_per_minute,
+          duration_seconds: session.duration_seconds || 0,
+          total_deducted: session.total_deducted || 0,
+          started_at: session.started_at || new Date().toISOString(),
+        });
         if (error) console.error('[Supabase Error] createConsultation:', error.message);
-      } catch (_) {}
+        else console.log('[Supabase Success] Created consultation session in Supabase:', session.id);
+      } catch (ex: any) {
+        console.error('[Supabase Exception] createConsultation:', ex?.message || ex);
+      }
     }
     return session;
   }
@@ -543,9 +643,22 @@ class DataStore {
     const db = getDbClient();
     if (db) {
       try {
-        const { error } = await db.from('consultations').update(updates).eq('id', id);
+        const dbUpdates: any = {};
+        if (updates.duration_seconds !== undefined) dbUpdates.duration_seconds = updates.duration_seconds;
+        if (updates.total_deducted !== undefined) dbUpdates.total_deducted = updates.total_deducted;
+        if (updates.ended_at !== undefined) dbUpdates.ended_at = updates.ended_at;
+        if (updates.started_at !== undefined) dbUpdates.started_at = updates.started_at;
+        if (updates.status) {
+          if (updates.status === 'pending' || (updates.status as any) === 'waiting') dbUpdates.status = 'requested';
+          else if (updates.status === 'declined') dbUpdates.status = 'cancelled';
+          else dbUpdates.status = updates.status;
+        }
+
+        const { error } = await db.from('consultations').update(dbUpdates).eq('id', id);
         if (error) console.error('[Supabase Error] updateConsultation:', error.message);
-      } catch (_) {}
+      } catch (ex: any) {
+        console.error('[Supabase Exception] updateConsultation:', ex?.message || ex);
+      }
     }
     return updated;
   }
